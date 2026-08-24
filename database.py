@@ -1,0 +1,262 @@
+"""
+Database Initialization and Connection Engine
+Manages SQLite database creation, session management, and realistic demo data seeding for Onboarding Operations.
+"""
+
+import datetime
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker, scoped_session
+from config import DB_PATH, DATA_DIR
+from models import Base, Associate, OnboardingRecord, ActivityLog
+from utils.constants import (
+    WORK_MODE_ONLINE,
+    WORK_MODE_OFFLINE,
+    STATUS_NOT_STARTED,
+    STATUS_IN_PROGRESS,
+    STATUS_COMPLETED,
+    STAGE_PRE_ONBOARDING,
+    STAGE_ONBOARDING_DAY,
+    STAGE_POST_ONBOARDING,
+)
+
+# Ensure database directory exists
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+db_uri = f"sqlite:///{DB_PATH.as_posix()}"
+engine = create_engine(db_uri, connect_args={"check_same_thread": False})
+SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+
+def get_db():
+    """Returns a database session instance."""
+    return SessionLocal()
+
+def init_db():
+    """Initializes tables and seeds initial demo data if database is empty or schema changed."""
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT pre_onboarding_status FROM onboarding_records LIMIT 1"))
+    except Exception:
+        # Schema changed or table missing; recreate tables cleanly
+        Base.metadata.drop_all(bind=engine)
+
+    Base.metadata.create_all(bind=engine)
+    db = get_db()
+    try:
+        associate_count = db.query(Associate).count()
+        if associate_count == 0:
+            seed_demo_data(db)
+    finally:
+        db.close()
+
+def recalculate_associate_progress(db, associate_id: int):
+    """
+    Recalculates dynamic overall progress % and overall status for an associate based on milestone stage completion.
+    Returns (overall_progress, overall_status)
+    """
+    record = db.query(OnboardingRecord).filter(OnboardingRecord.associate_id == associate_id).first()
+    assoc = db.query(Associate).filter(Associate.id == associate_id).first()
+    if not record or not assoc:
+        return 0.0, STATUS_NOT_STARTED
+
+    # Progress calculation based on key milestones
+    milestones = [
+        record.pre_onboarding_status == STATUS_COMPLETED,
+        record.it_equipment_status in ["Dispatched", "Delivered"],
+        record.bgv_status == "Verified",
+        record.day1_orientation_status == STATUS_COMPLETED,
+        record.post_onboarding_status == STATUS_COMPLETED,
+        record.probation_status == "Confirmed",
+    ]
+
+    completed_count = sum(1 for m in milestones if m)
+    total_count = len(milestones)
+    progress = round((completed_count / total_count) * 100.0, 1)
+
+    if progress == 0.0:
+        new_status = STATUS_NOT_STARTED
+        record.current_stage = STAGE_PRE_ONBOARDING
+    elif progress == 100.0:
+        new_status = STATUS_COMPLETED
+        record.current_stage = STAGE_POST_ONBOARDING
+        if not record.completed_at:
+            record.completed_at = datetime.datetime.utcnow()
+    else:
+        new_status = STATUS_IN_PROGRESS
+        if progress < 40.0:
+            record.current_stage = STAGE_PRE_ONBOARDING
+        elif progress < 70.0:
+            record.current_stage = STAGE_ONBOARDING_DAY
+        else:
+            record.current_stage = STAGE_POST_ONBOARDING
+
+    record.overall_progress = progress
+    record.overall_status = new_status
+    assoc.status = new_status
+
+    db.commit()
+    return progress, new_status
+
+def seed_demo_data(db):
+    """Seeds realistic associate profiles with varied departments, work modes, and milestone states."""
+    today = datetime.date.today()
+
+    demo_associates = [
+        {
+            "first_name": "Rahul",
+            "last_name": "Sharma",
+            "personal_email": "rahul.sharma@example.com",
+            "phone": "+91 9876543210",
+            "designation": "Software Engineer",
+            "department": "Engineering",
+            "grade": "L2 - Senior Associate",
+            "date_of_joining": today - datetime.timedelta(days=40),
+            "location": "Pune",
+            "reporting_manager": "Vikram Malhotra",
+            "employee_id": "EMP-2026-001",
+            "work_email": "rahul.sharma@company.com",
+            "work_mode": WORK_MODE_ONLINE,
+            "asset_shipment_address": "Flat 402, Baner, Pune 411045",
+            "record": {
+                "overall_status": STATUS_COMPLETED,
+                "overall_progress": 100.0,
+                "current_stage": STAGE_POST_ONBOARDING,
+                "pre_onboarding_status": STATUS_COMPLETED,
+                "it_equipment_status": "Delivered",
+                "bgv_status": "Verified",
+                "day1_orientation_status": STATUS_COMPLETED,
+                "post_onboarding_status": STATUS_COMPLETED,
+                "probation_status": "Confirmed",
+            }
+        },
+        {
+            "first_name": "Priya",
+            "last_name": "Patel",
+            "personal_email": "priya.patel@example.com",
+            "phone": "+91 9876543211",
+            "designation": "HR Associate",
+            "department": "Human Resources",
+            "grade": "L1 - Associate",
+            "date_of_joining": today - datetime.timedelta(days=15),
+            "location": "Bengaluru",
+            "reporting_manager": "Ananya Desai",
+            "employee_id": "EMP-2026-002",
+            "work_email": "priya.patel@company.com",
+            "work_mode": WORK_MODE_OFFLINE,
+            "asset_shipment_address": None,
+            "record": {
+                "overall_status": STATUS_IN_PROGRESS,
+                "overall_progress": 66.7,
+                "current_stage": STAGE_ONBOARDING_DAY,
+                "pre_onboarding_status": STATUS_COMPLETED,
+                "it_equipment_status": "Delivered",
+                "bgv_status": "Verified",
+                "day1_orientation_status": STATUS_COMPLETED,
+                "post_onboarding_status": STATUS_IN_PROGRESS,
+                "probation_status": "Under Review",
+            }
+        },
+        {
+            "first_name": "Amit",
+            "last_name": "Verma",
+            "personal_email": "amit.verma@example.com",
+            "phone": "+91 9876543212",
+            "designation": "Data Analyst",
+            "department": "Data",
+            "grade": "L1 - Associate",
+            "date_of_joining": today - datetime.timedelta(days=5),
+            "location": "Hyderabad",
+            "reporting_manager": "Suresh Nair",
+            "employee_id": "EMP-2026-003",
+            "work_email": "amit.verma@company.com",
+            "work_mode": WORK_MODE_ONLINE,
+            "asset_shipment_address": "Plot 12, Jubilee Hills, Hyderabad 500033",
+            "record": {
+                "overall_status": STATUS_IN_PROGRESS,
+                "overall_progress": 50.0,
+                "current_stage": STAGE_ONBOARDING_DAY,
+                "pre_onboarding_status": STATUS_COMPLETED,
+                "it_equipment_status": "Dispatched",
+                "bgv_status": "Verified",
+                "day1_orientation_status": STATUS_COMPLETED,
+                "post_onboarding_status": STATUS_NOT_STARTED,
+                "probation_status": "Under Review",
+            }
+        },
+        {
+            "first_name": "Sneha",
+            "last_name": "Joshi",
+            "personal_email": "sneha.joshi@example.com",
+            "phone": "+91 9876543213",
+            "designation": "AI Engineer",
+            "department": "AI",
+            "grade": "L2 - Senior Associate",
+            "date_of_joining": today + datetime.timedelta(days=3),
+            "location": "Mumbai",
+            "reporting_manager": "Dr. Rajesh Kulkarni",
+            "employee_id": "EMP-2026-004",
+            "work_email": "sneha.joshi@company.com",
+            "work_mode": WORK_MODE_ONLINE,
+            "asset_shipment_address": "Powai, Mumbai 400076",
+            "record": {
+                "overall_status": STATUS_IN_PROGRESS,
+                "overall_progress": 33.3,
+                "current_stage": STAGE_PRE_ONBOARDING,
+                "pre_onboarding_status": STATUS_IN_PROGRESS,
+                "it_equipment_status": "Dispatched",
+                "bgv_status": "Verified",
+                "day1_orientation_status": "Scheduled",
+                "post_onboarding_status": STATUS_NOT_STARTED,
+                "probation_status": "Under Review",
+            }
+        },
+        {
+            "first_name": "Arjun",
+            "last_name": "Mehta",
+            "personal_email": "arjun.mehta@example.com",
+            "phone": "+91 9876543214",
+            "designation": "Finance Associate",
+            "department": "Finance",
+            "grade": "L1 - Associate",
+            "date_of_joining": today + datetime.timedelta(days=10),
+            "location": "Delhi NCR",
+            "reporting_manager": "Kavita Rao",
+            "employee_id": "EMP-2026-005",
+            "work_email": "arjun.mehta@company.com",
+            "work_mode": WORK_MODE_OFFLINE,
+            "asset_shipment_address": None,
+            "record": {
+                "overall_status": STATUS_NOT_STARTED,
+                "overall_progress": 0.0,
+                "current_stage": STAGE_PRE_ONBOARDING,
+                "pre_onboarding_status": STATUS_NOT_STARTED,
+                "it_equipment_status": "Pending Dispatch",
+                "bgv_status": STATUS_IN_PROGRESS,
+                "day1_orientation_status": "Scheduled",
+                "post_onboarding_status": STATUS_NOT_STARTED,
+                "probation_status": "Under Review",
+            }
+        },
+    ]
+
+    for item in demo_associates:
+        rec_data = item.pop("record")
+        assoc = Associate(**item, status=rec_data["overall_status"])
+        db.add(assoc)
+        db.commit()
+        db.refresh(assoc)
+
+        rec = OnboardingRecord(
+            associate_id=assoc.id,
+            started_at=datetime.datetime.utcnow(),
+            **rec_data
+        )
+        db.add(rec)
+
+        log = ActivityLog(
+            associate_id=assoc.id,
+            action="Associate Onboarding Initiated",
+            description=f"Initiated onboarding record for {assoc.full_name} ({assoc.designation}). Work mode: {assoc.work_mode}.",
+            performed_by="System Seed Engine",
+        )
+        db.add(log)
+        db.commit()

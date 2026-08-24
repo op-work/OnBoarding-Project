@@ -1,0 +1,182 @@
+/* Enterprise HR Application Custom CSS Theme */
+
+:root {
+    --primary: #1E40AF;
+    --primary-light: #3B82F6;
+    --bg-main: #F8FAFC;
+    --card-bg: #FFFFFF;
+    --border-color: #E2E8F0;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --success: #10B981;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+}
+
+body {
+    background-color: #F8FAFC;
+    color: #0F172A;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Custom Card Container */
+.hr-card {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease-in-out;
+}
+
+.hr-card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+}
+
+/* Header & Typography */
+.hr-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #0F172A;
+    margin-bottom: 4px;
+}
+
+.hr-subtitle {
+    font-size: 14px;
+    color: #64748B;
+    margin-bottom: 16px;
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-completed {
+    background-color: #D1FAE5;
+    color: #065F46;
+}
+
+.status-in-progress {
+    background-color: #DBEAFE;
+    color: #1E40AF;
+}
+
+.status-not-started {
+    background-color: #F1F5F9;
+    color: #475569;
+}
+
+.status-overdue {
+    background-color: #FEE2E2;
+    color: #991B1B;
+}
+
+/* Onboarding Stage Stepper */
+.stepper-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 24px 0;
+    padding: 16px 24px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+}
+
+.stepper-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+}
+
+.stepper-step.completed .step-number {
+    background-color: #10B981;
+    color: white;
+}
+
+.stepper-step.active .step-number {
+    background-color: #2563EB;
+    color: white;
+    box-shadow: 0 0 0 4px #DBEAFE;
+}
+
+.stepper-step.pending .step-number {
+    background-color: #E2E8F0;
+    color: #64748B;
+}
+
+.step-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.step-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1E293B;
+}
+
+/* Sidebar top alignment - position logo cleanly at top left of sidebar */
+section[data-testid="stSidebar"] div[data-testid="stSidebarUserContent"],
+div[data-testid="stSidebarUserContent"] {
+    padding-top: 0rem !important;
+    margin-top: -0.5rem !important;
+}
+
+div[data-testid="stSidebarHeader"] {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    min-height: 0 !important;
+}
+
+/* Remove default top padding from main page container so header logo sits at the very top */
+div[data-testid="stMainBlockContainer"],
+.main .block-container {
+    padding-top: 0.5rem !important;
+}
+
+header[data-testid="stHeader"] {
+    background: transparent !important;
+    height: 0rem !important;
+}
+
+/* Company Logo Size & Transparent PNG Styling */
+.sidebar-company-logo {
+    height: auto !important;
+    max-height: 80px !important;
+    width: 100% !important;
+    max-width: 300px !important;
+    object-fit: contain !important;
+    object-position: left center !important;
+    padding-left: 6px !important;
+}
+
+.company-header-logo img {
+    height: auto !important;
+    max-height: 75px !important;
+    width: auto !important;
+    max-width: 300px !important;
+    object-fit: contain !important;
+    object-position: right center !important;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    cursor: pointer;
+}
+
+.company-header-logo:hover img {
+    transform: scale(1.04);
+    opacity: 0.9;
+}
