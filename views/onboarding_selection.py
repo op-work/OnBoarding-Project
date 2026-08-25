@@ -22,11 +22,11 @@ def render_onboarding_selection_page(db: Session):
 
     with col1:
         st.markdown(clean_html("""
-        <div style="background: #FFFFFF; border: 2px solid #2563EB; border-radius: 16px; padding: 32px 24px; text-align: center; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08); height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+        <div style="background: #FFFFFF; border: 2px solid #2563EB; border-radius: 16px; padding: 28px 24px; text-align: center; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08); min-height: 250px; height: 250px; display: flex; flex-direction: column; justify-content: space-between;">
             <div>
                 <div style="width: 64px; height: 64px; border-radius: 50%; background: #DBEAFE; color: #2563EB; font-size: 24px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">NEW</div>
                 <h2 style="font-size: 22px; font-weight: 800; color: #0F172A; margin: 0 0 8px 0;">NEW JOINER</h2>
-                <p style="font-size: 14px; color: #64748B; line-height: 1.5; margin-bottom: 24px;">Start a new onboarding process for an associate joining the organization. Collect details, set work mode, and initialize milestone records.</p>
+                <p style="font-size: 14px; color: #64748B; line-height: 1.5; margin: 0;">Start a new onboarding process for an associate joining the organization. Collect details, set work mode, and initialize milestone records.</p>
             </div>
         </div>
         """), unsafe_allow_html=True)
@@ -36,14 +36,15 @@ def render_onboarding_selection_page(db: Session):
 
     with col2:
         st.markdown(clean_html("""
-        <div style="background: #FFFFFF; border: 2px solid #64748B; border-radius: 16px; padding: 32px 24px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+        <div style="background: #FFFFFF; border: 2px solid #2563EB; border-radius: 16px; padding: 28px 24px; text-align: center; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08); min-height: 250px; height: 250px; display: flex; flex-direction: column; justify-content: space-between;">
             <div>
-                <div style="width: 64px; height: 64px; border-radius: 50%; background: #F1F5F9; color: #475569; font-size: 24px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">LIST</div>
+                <div style="width: 64px; height: 64px; border-radius: 50%; background: #DBEAFE; color: #2563EB; font-size: 24px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">LIST</div>
                 <h2 style="font-size: 22px; font-weight: 800; color: #0F172A; margin: 0 0 8px 0;">EXISTING / OLD JOINER</h2>
-                <p style="font-size: 14px; color: #64748B; line-height: 1.5; margin-bottom: 24px;">View registered associates and inspect onboarding statuses, stage progress, and verified milestones.</p>
+                <p style="font-size: 14px; color: #64748B; line-height: 1.5; margin: 0;">View registered associates and inspect onboarding statuses, stage progress, and verified milestones.</p>
             </div>
         </div>
         """), unsafe_allow_html=True)
-        if st.button("View Existing Associates", key="btn_view_existing_associates", type="secondary", use_container_width=True):
+        if st.button("View Existing Associates", key="btn_view_existing_associates", type="primary", use_container_width=True):
             st.session_state["page"] = "existing_associates"
             st.rerun()
+

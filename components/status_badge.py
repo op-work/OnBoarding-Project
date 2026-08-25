@@ -18,8 +18,8 @@ def render_status_badge(status: str) -> str:
         bg = "#FEF3C7"
         color = "#92400E"
     elif "rejected" in s_lower or "overdue" in s_lower:
-        bg = "#FEE2E2"
-        color = "#991B1B"
+        bg = "#FEF3C7"
+        color = "#B45309"
     else:
         bg = "#F1F5F9"
         color = "#475569"

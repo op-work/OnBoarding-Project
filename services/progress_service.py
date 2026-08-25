@@ -23,23 +23,69 @@ class ProgressService:
 
         if stage == STAGE_PRE_ONBOARDING:
             status = record.pre_onboarding_status
-            pct = 100.0 if status == STATUS_COMPLETED else (50.0 if status == STATUS_IN_PROGRESS else 0.0)
-            detail = f"IT Status: {record.it_equipment_status} | BGV: {record.bgv_status}"
+            pre_items = [
+                bool(record.pre_info_received),
+                bool(record.pre_connect_joiner),
+                record.pre_it_tickets_status == "Raised",
+                bool(record.pre_notify_stakeholders),
+                bool(record.pre_prepare_schedule),
+                bool(record.pre_share_schedule)
+            ]
+            completed_cnt = sum(1 for item in pre_items if item)
+            total_cnt = 6
+            pct = round((completed_cnt / total_cnt) * 100.0, 1)
+            detail = f"{completed_cnt} / {total_cnt} Milestones Verified ({pct}%)"
+            return {
+                "stage": stage,
+                "status": status,
+                "progress_pct": pct,
+                "completed": completed_cnt,
+                "total": total_cnt,
+                "detail": detail
+            }
         elif stage == STAGE_ONBOARDING_DAY:
             status = record.day1_orientation_status
-            pct = 100.0 if status == STATUS_COMPLETED else (50.0 if status == "Scheduled" else 0.0)
-            detail = f"Orientation: {record.day1_orientation_status}"
+            day1_items = [
+                bool(record.day1_mandatory_forms),
+                bool(record.day1_employment_docs),
+                bool(record.day1_hr_induction),
+                bool(record.day1_announce_joiner)
+            ]
+            completed_cnt = sum(1 for item in day1_items if item)
+            total_cnt = 4
+            pct = round((completed_cnt / total_cnt) * 100.0, 1)
+            detail = f"{completed_cnt} / {total_cnt} Milestones Verified ({pct}%)"
+            return {
+                "stage": stage,
+                "status": status,
+                "progress_pct": pct,
+                "completed": completed_cnt,
+                "total": total_cnt,
+                "detail": detail
+            }
         else:
             status = record.post_onboarding_status
-            pct = 100.0 if status == STATUS_COMPLETED else (50.0 if status == STATUS_IN_PROGRESS else 0.0)
-            detail = f"Probation: {record.probation_status}"
-
-        return {
-            "stage": stage,
-            "status": status,
-            "progress_pct": pct,
-            "detail": detail
-        }
+            post_items = [
+                record.post_id_card_status == "Raised",
+                record.post_hrms_doc_status == "Approved",
+                bool(record.post_feedback_1week),
+                bool(record.post_insurance_pf),
+                bool(record.post_feedback_30days),
+                bool(record.post_feedback_60days),
+                bool(record.post_feedback_90days)
+            ]
+            completed_cnt = sum(1 for item in post_items if item)
+            total_cnt = 7
+            pct = round((completed_cnt / total_cnt) * 100.0, 1)
+            detail = f"{completed_cnt} / {total_cnt} Milestones Verified ({pct}%)"
+            return {
+                "stage": stage,
+                "status": status,
+                "progress_pct": pct,
+                "completed": completed_cnt,
+                "total": total_cnt,
+                "detail": detail
+            }
 
     @staticmethod
     def get_overall_progress(db: Session, associate_id: int) -> Dict[str, Any]:

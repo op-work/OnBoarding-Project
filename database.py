@@ -34,7 +34,7 @@ def init_db():
     """Initializes tables and seeds initial demo data if database is empty or schema changed."""
     try:
         with engine.connect() as conn:
-            conn.execute(text("SELECT pre_onboarding_status FROM onboarding_records LIMIT 1"))
+            conn.execute(text("SELECT post_id_card_status FROM onboarding_records LIMIT 1"))
     except Exception:
         # Schema changed or table missing; recreate tables cleanly
         Base.metadata.drop_all(bind=engine)
@@ -57,6 +57,56 @@ def recalculate_associate_progress(db, associate_id: int):
     assoc = db.query(Associate).filter(Associate.id == associate_id).first()
     if not record or not assoc:
         return 0.0, STATUS_NOT_STARTED
+
+    # Calculate Pre-Onboarding Stage Status based on 6 checklist items
+    pre_items = [
+        bool(record.pre_info_received),
+        bool(record.pre_connect_joiner),
+        record.pre_it_tickets_status == "Raised",
+        bool(record.pre_notify_stakeholders),
+        bool(record.pre_prepare_schedule),
+        bool(record.pre_share_schedule)
+    ]
+    pre_completed_count = sum(1 for item in pre_items if item)
+    if pre_completed_count == 6:
+        record.pre_onboarding_status = STATUS_COMPLETED
+    elif pre_completed_count > 0:
+        record.pre_onboarding_status = STATUS_IN_PROGRESS
+    else:
+        record.pre_onboarding_status = STATUS_NOT_STARTED
+
+    # Calculate Onboarding Day Stage Status based on 4 checklist items
+    day1_items = [
+        bool(record.day1_mandatory_forms),
+        bool(record.day1_employment_docs),
+        bool(record.day1_hr_induction),
+        bool(record.day1_announce_joiner)
+    ]
+    day1_completed_count = sum(1 for item in day1_items if item)
+    if day1_completed_count == 4:
+        record.day1_orientation_status = STATUS_COMPLETED
+    elif day1_completed_count > 0:
+        record.day1_orientation_status = STATUS_IN_PROGRESS
+    else:
+        record.day1_orientation_status = STATUS_NOT_STARTED
+
+    # Calculate Post-Onboarding Stage Status based on 7 checklist items
+    post_items = [
+        record.post_id_card_status == "Raised",
+        record.post_hrms_doc_status == "Approved",
+        bool(record.post_feedback_1week),
+        bool(record.post_insurance_pf),
+        bool(record.post_feedback_30days),
+        bool(record.post_feedback_60days),
+        bool(record.post_feedback_90days)
+    ]
+    post_completed_count = sum(1 for item in post_items if item)
+    if post_completed_count == 7:
+        record.post_onboarding_status = STATUS_COMPLETED
+    elif post_completed_count > 0:
+        record.post_onboarding_status = STATUS_IN_PROGRESS
+    else:
+        record.post_onboarding_status = STATUS_NOT_STARTED
 
     # Progress calculation based on key milestones
     milestones = [

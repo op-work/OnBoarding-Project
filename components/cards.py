@@ -29,15 +29,15 @@ def render_stage_card(title: str, description: str, completed: int, total: int, 
     """Renders a stage overview card with status badge, progress bar, and navigation button."""
     status_badge = render_status_badge(status)
     html = f"""
-    <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 16px;">
+    <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 16px; min-height: 185px; height: 185px; display: flex; flex-direction: column; justify-content: space-between;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
             <div>
                 <h3 style="margin: 0; font-size: 18px; color: #0F172A; font-weight: 700;">{title}</h3>
-                <p style="margin: 4px 0 12px 0; font-size: 13px; color: #64748B;">{description}</p>
+                <p style="margin: 4px 0 12px 0; font-size: 13px; color: #64748B; line-height: 1.4;">{description}</p>
             </div>
             <div>{status_badge}</div>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #475569; margin-bottom: 6px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #475569; margin-bottom: 0px;">
             <span>Milestone Status: <strong>{completed} / {total} Verified</strong></span>
             <span style="font-weight: 700; color: #2563EB;">{pct}%</span>
         </div>

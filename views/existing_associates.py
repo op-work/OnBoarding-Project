@@ -82,7 +82,7 @@ def render_existing_associates_page(db: Session):
         """
         st.markdown(clean_html(card_html), unsafe_allow_html=True)
 
-        c_act1, c_act2 = st.columns([1, 4])
+        c_act1, c_act2, c_act3 = st.columns([1.5, 3.5, 1])
         with c_act1:
             if st.button("View Details", key=f"btn_view_{assoc.id}", use_container_width=True):
                 st.session_state["selected_associate_id"] = assoc.id
@@ -93,4 +93,14 @@ def render_existing_associates_page(db: Session):
                 st.session_state["selected_associate_id"] = assoc.id
                 st.session_state["page"] = "onboarding_dashboard"
                 st.rerun()
+        with c_act3:
+            with st.popover("Delete", use_container_width=True):
+                st.warning(f"Delete **{assoc.full_name}**?")
+                st.caption("This action is permanent and cannot be undone.")
+                if st.button("Confirm Delete", key=f"btn_confirm_del_{assoc.id}", type="primary", use_container_width=True):
+                    if st.session_state.get("selected_associate_id") == assoc.id:
+                        st.session_state["selected_associate_id"] = None
+                    AssociateService.delete_associate(db, assoc.id)
+                    st.toast(f"Employee {assoc.full_name} deleted successfully.", icon="🗑️")
+                    st.rerun()
         st.markdown("<hr style='margin: 8px 0 16px 0; border-top: 1px solid #F1F5F9;' />", unsafe_allow_html=True)

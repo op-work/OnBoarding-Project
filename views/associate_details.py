@@ -81,3 +81,17 @@ def render_associate_details_page(db: Session):
             </div>
             """
             st.markdown(clean_html(log_html), unsafe_allow_html=True)
+
+    st.markdown("---")
+    with st.expander("Danger Zone - Management Actions", expanded=False):
+        st.markdown(f"**Delete Employee Record ({assoc.full_name})**")
+        st.caption("Permanently delete this associate's record, onboarding status, and activity logs.")
+        with st.popover("Delete Employee", use_container_width=False):
+            st.error(f"Permanently delete **{assoc.full_name}** ({assoc.employee_id})?")
+            st.write("This action cannot be undone.")
+            if st.button("Confirm Delete Employee", key="btn_del_assoc_detail_page", type="primary", use_container_width=True):
+                AssociateService.delete_associate(db, assoc.id)
+                st.session_state["selected_associate_id"] = None
+                st.session_state["page"] = "existing_associates"
+                st.toast(f"Employee {assoc.full_name} deleted successfully.", icon="🗑️")
+                st.rerun()

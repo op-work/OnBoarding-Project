@@ -10,7 +10,7 @@
     --text-secondary: #475569;
     --success: #10B981;
     --warning: #F59E0B;
-    --danger: #EF4444;
+    --danger: #E57C00;
 }
 
 body {
@@ -75,8 +75,8 @@ body {
 }
 
 .status-overdue {
-    background-color: #FEE2E2;
-    color: #991B1B;
+    background-color: #FEF3C7;
+    color: #B45309;
 }
 
 /* Onboarding Stage Stepper */
@@ -179,4 +179,25 @@ header[data-testid="stHeader"] {
 .company-header-logo:hover img {
     transform: scale(1.04);
     opacity: 0.9;
+}
+
+/* Konverge AI Brand Yellowish Orange (#E57C00) Theme Overrides */
+div[data-baseweb="calendar"] button[aria-selected="true"],
+div[data-baseweb="calendar"] button[aria-selected="true"]:hover {
+    background-color: #E57C00 !important;
+    color: #FFFFFF !important;
+}
+
+div[data-baseweb="calendar"] button:hover {
+    background-color: #FEF3C7 !important;
+    color: #E57C00 !important;
+}
+
+.stDateInput div[role="button"]:focus {
+    border-color: #E57C00 !important;
+}
+
+div[data-testid="stNotification"][aria-label="st.error"],
+div[data-baseweb="toast"] {
+    border-left-color: #E57C00 !important;
 }
