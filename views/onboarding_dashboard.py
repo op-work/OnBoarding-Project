@@ -79,7 +79,7 @@ def render_onboarding_dashboard_page(db: Session):
             title=STAGE_ONBOARDING_DAY,
             description=STAGE_DESCRIPTIONS[STAGE_ONBOARDING_DAY],
             completed=s_info.get("completed", 0),
-            total=s_info.get("total", 1),
+            total=s_info.get("total", 4),
             pct=s_info.get("progress_pct", 0.0),
             status=s_info.get("status", "Scheduled"),
             page_key="onboarding_day"
