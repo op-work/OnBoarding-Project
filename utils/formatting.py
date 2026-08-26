@@ -37,6 +37,6 @@ def get_status_color(status: str) -> str:
     elif "pending" in status_lower or "requested" in status_lower:
         return "#F59E0B"  # Amber
     elif "rejected" in status_lower or "overdue" in status_lower:
-        return "#EF4444"  # Red
+        return "#E57C00"  # Konverge AI Yellowish Orange
     else:
         return "#6B7280"  # Muted Gray

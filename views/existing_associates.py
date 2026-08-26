@@ -82,7 +82,7 @@ def render_existing_associates_page(db: Session):
         """
         st.markdown(clean_html(card_html), unsafe_allow_html=True)
 
-        c_act1, c_act2 = st.columns([1, 4])
+        c_act1, c_act2 = st.columns([1.5, 3.5])
         with c_act1:
             if st.button("View Details", key=f"btn_view_{assoc.id}", use_container_width=True):
                 st.session_state["selected_associate_id"] = assoc.id

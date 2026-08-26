@@ -137,3 +137,15 @@ class AssociateService:
         db.commit()
         db.refresh(assoc)
         return assoc
+
+    @staticmethod
+    def delete_associate(db: Session, associate_id: int) -> bool:
+        """Deletes an associate record along with all associated onboarding records and audit logs."""
+        assoc = db.query(Associate).filter(Associate.id == associate_id).first()
+        if not assoc:
+            return False
+
+        db.delete(assoc)
+        db.commit()
+        return True
+

@@ -66,8 +66,8 @@ def render_onboarding_dashboard_page(db: Session):
         render_stage_card(
             title=STAGE_PRE_ONBOARDING,
             description=STAGE_DESCRIPTIONS[STAGE_PRE_ONBOARDING],
-            completed=1 if s_info.get("status") == "Completed" else 0,
-            total=1,
+            completed=s_info.get("completed", 0),
+            total=s_info.get("total", 6),
             pct=s_info.get("progress_pct", 0.0),
             status=s_info.get("status", "Not Started"),
             page_key="pre_onboarding"
@@ -78,8 +78,8 @@ def render_onboarding_dashboard_page(db: Session):
         render_stage_card(
             title=STAGE_ONBOARDING_DAY,
             description=STAGE_DESCRIPTIONS[STAGE_ONBOARDING_DAY],
-            completed=1 if s_info.get("status") == "Completed" else 0,
-            total=1,
+            completed=s_info.get("completed", 0),
+            total=s_info.get("total", 4),
             pct=s_info.get("progress_pct", 0.0),
             status=s_info.get("status", "Scheduled"),
             page_key="onboarding_day"
@@ -90,8 +90,8 @@ def render_onboarding_dashboard_page(db: Session):
         render_stage_card(
             title=STAGE_POST_ONBOARDING,
             description=STAGE_DESCRIPTIONS[STAGE_POST_ONBOARDING],
-            completed=1 if s_info.get("status") == "Completed" else 0,
-            total=1,
+            completed=s_info.get("completed", 0),
+            total=s_info.get("total", 7),
             pct=s_info.get("progress_pct", 0.0),
             status=s_info.get("status", "Not Started"),
             page_key="post_onboarding"

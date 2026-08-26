@@ -12,6 +12,7 @@ from sqlalchemy import (
     Float,
     DateTime,
     Date,
+    Boolean,
     ForeignKey,
 )
 from sqlalchemy.orm import declarative_base, relationship
@@ -79,12 +80,35 @@ class OnboardingRecord(Base):
     current_stage = Column(String(100), default="Pre-Onboarding")  # Pre-Onboarding, Onboarding Day, Post-Onboarding
     
     # Milestone Stages
-    pre_onboarding_status = Column(String(50), default="In Progress")
+    pre_onboarding_status = Column(String(50), default="Not Started")
     it_equipment_status = Column(String(50), default="Pending Dispatch")  # Pending Dispatch, Dispatched, Delivered
     bgv_status = Column(String(50), default="In Progress")  # Not Started, In Progress, Verified
     day1_orientation_status = Column(String(50), default="Scheduled")  # Not Started, Scheduled, Completed
     post_onboarding_status = Column(String(50), default="Not Started")  # Not Started, In Progress, Completed
     probation_status = Column(String(50), default="Under Review")  # Under Review, Confirmed
+
+    # Pre-Onboarding Specific Checklist Fields
+    pre_info_received = Column(Boolean, default=False)
+    pre_connect_joiner = Column(Boolean, default=False)
+    pre_it_tickets_status = Column(String(50), default="Not Raised")  # Not Raised, Raised
+    pre_notify_stakeholders = Column(Boolean, default=False)
+    pre_prepare_schedule = Column(Boolean, default=False)
+    pre_share_schedule = Column(Boolean, default=False)
+
+    # Onboarding Day Specific Checklist Fields
+    day1_mandatory_forms = Column(Boolean, default=False)
+    day1_employment_docs = Column(Boolean, default=False)
+    day1_hr_induction = Column(Boolean, default=False)
+    day1_announce_joiner = Column(Boolean, default=False)
+
+    # Post-Onboarding Specific Checklist Fields
+    post_id_card_status = Column(String(50), default="Not Raised")  # Not Raised, Raised
+    post_hrms_doc_status = Column(String(50), default="Pending Approval")  # Pending Approval, Approved
+    post_feedback_1week = Column(Boolean, default=False)
+    post_insurance_pf = Column(Boolean, default=False)
+    post_feedback_30days = Column(Boolean, default=False)
+    post_feedback_60days = Column(Boolean, default=False)
+    post_feedback_90days = Column(Boolean, default=False)
 
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)

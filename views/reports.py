@@ -80,4 +80,6 @@ def render_reports_page(db: Session):
 
     if report_rows:
         df_rep = pd.DataFrame(report_rows)
+        df_rep.index = range(1, len(df_rep) + 1)
         st.dataframe(df_rep, use_container_width=True)
+

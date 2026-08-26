@@ -81,3 +81,4 @@ def render_associate_details_page(db: Session):
             </div>
             """
             st.markdown(clean_html(log_html), unsafe_allow_html=True)
+

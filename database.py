@@ -4,6 +4,13 @@ Manages SQLite database creation, session management, and realistic demo data se
 """
 
 import datetime
+try:
+    import sqlite3
+    import _sqlite3
+except (ImportError, ModuleNotFoundError):
+    import sys, pysqlite3
+    sys.modules["sqlite3"] = pysqlite3
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
 from config import DB_PATH, DATA_DIR
@@ -34,7 +41,7 @@ def init_db():
     """Initializes tables and seeds initial demo data if database is empty or schema changed."""
     try:
         with engine.connect() as conn:
-            conn.execute(text("SELECT pre_onboarding_status FROM onboarding_records LIMIT 1"))
+            conn.execute(text("SELECT post_id_card_status FROM onboarding_records LIMIT 1"))
     except Exception:
         # Schema changed or table missing; recreate tables cleanly
         Base.metadata.drop_all(bind=engine)
@@ -58,33 +65,82 @@ def recalculate_associate_progress(db, associate_id: int):
     if not record or not assoc:
         return 0.0, STATUS_NOT_STARTED
 
-    # Progress calculation based on key milestones
-    milestones = [
-        record.pre_onboarding_status == STATUS_COMPLETED,
-        record.it_equipment_status in ["Dispatched", "Delivered"],
-        record.bgv_status == "Verified",
-        record.day1_orientation_status == STATUS_COMPLETED,
-        record.post_onboarding_status == STATUS_COMPLETED,
-        record.probation_status == "Confirmed",
+    # Calculate Pre-Onboarding Stage Status based on 6 checklist items
+    pre_items = [
+        bool(record.pre_info_received),
+        bool(record.pre_connect_joiner),
+        record.pre_it_tickets_status == "Raised",
+        bool(record.pre_notify_stakeholders),
+        bool(record.pre_prepare_schedule),
+        bool(record.pre_share_schedule)
     ]
+    pre_completed_count = sum(1 for item in pre_items if item)
+    if pre_completed_count == 6:
+        record.pre_onboarding_status = STATUS_COMPLETED
+        if assoc.work_mode == "Online" and record.it_equipment_status == "Pending Dispatch":
+            record.it_equipment_status = "Dispatched"
+    elif pre_completed_count > 0:
+        record.pre_onboarding_status = STATUS_IN_PROGRESS
+    else:
+        record.pre_onboarding_status = STATUS_NOT_STARTED
 
-    completed_count = sum(1 for m in milestones if m)
-    total_count = len(milestones)
-    progress = round((completed_count / total_count) * 100.0, 1)
+    # Calculate Onboarding Day Stage Status based on 4 checklist items
+    day1_items = [
+        bool(record.day1_mandatory_forms),
+        bool(record.day1_employment_docs),
+        bool(record.day1_hr_induction),
+        bool(record.day1_announce_joiner)
+    ]
+    day1_completed_count = sum(1 for item in day1_items if item)
+    if day1_completed_count == 4:
+        record.day1_orientation_status = STATUS_COMPLETED
+    elif day1_completed_count > 0:
+        record.day1_orientation_status = STATUS_IN_PROGRESS
+    else:
+        record.day1_orientation_status = STATUS_NOT_STARTED
 
-    if progress == 0.0:
-        new_status = STATUS_NOT_STARTED
-        record.current_stage = STAGE_PRE_ONBOARDING
-    elif progress == 100.0:
+    # Calculate Post-Onboarding Stage Status based on 7 checklist items
+    post_items = [
+        record.post_id_card_status == "Raised",
+        record.post_hrms_doc_status == "Approved",
+        bool(record.post_feedback_1week),
+        bool(record.post_insurance_pf),
+        bool(record.post_feedback_30days),
+        bool(record.post_feedback_60days),
+        bool(record.post_feedback_90days)
+    ]
+    post_completed_count = sum(1 for item in post_items if item)
+    if post_completed_count == 7:
+        record.post_onboarding_status = STATUS_COMPLETED
+    elif post_completed_count > 0:
+        record.post_onboarding_status = STATUS_IN_PROGRESS
+    else:
+        record.post_onboarding_status = STATUS_NOT_STARTED
+
+    total_completed = pre_completed_count + day1_completed_count + post_completed_count
+    total_items = 17  # 6 Pre + 4 Day1 + 7 Post items
+
+    if total_completed == total_items:
+        progress = 100.0
         new_status = STATUS_COMPLETED
         record.current_stage = STAGE_POST_ONBOARDING
+        record.it_equipment_status = "Delivered"
+        record.bgv_status = "Verified"
+        record.probation_status = "Confirmed"
         if not record.completed_at:
             record.completed_at = datetime.datetime.utcnow()
+    elif total_completed == 0:
+        progress = 0.0
+        new_status = "Draft" if assoc.status == "Draft" else STATUS_NOT_STARTED
+        record.current_stage = STAGE_PRE_ONBOARDING
+        record.completed_at = None
     else:
+        progress = round((total_completed / float(total_items)) * 100.0, 1)
         new_status = STATUS_IN_PROGRESS
-        if progress < 40.0:
+        record.completed_at = None
+        if pre_completed_count < 6:
             record.current_stage = STAGE_PRE_ONBOARDING
-        elif progress < 70.0:
+        elif day1_completed_count < 4:
             record.current_stage = STAGE_ONBOARDING_DAY
         else:
             record.current_stage = STAGE_POST_ONBOARDING
@@ -117,14 +173,25 @@ def seed_demo_data(db):
             "work_mode": WORK_MODE_ONLINE,
             "asset_shipment_address": "Flat 402, Baner, Pune 411045",
             "record": {
-                "overall_status": STATUS_COMPLETED,
-                "overall_progress": 100.0,
-                "current_stage": STAGE_POST_ONBOARDING,
-                "pre_onboarding_status": STATUS_COMPLETED,
+                "pre_info_received": True,
+                "pre_connect_joiner": True,
+                "pre_it_tickets_status": "Raised",
+                "pre_notify_stakeholders": True,
+                "pre_prepare_schedule": True,
+                "pre_share_schedule": True,
+                "day1_mandatory_forms": True,
+                "day1_employment_docs": True,
+                "day1_hr_induction": True,
+                "day1_announce_joiner": True,
+                "post_id_card_status": "Raised",
+                "post_hrms_doc_status": "Approved",
+                "post_feedback_1week": True,
+                "post_insurance_pf": True,
+                "post_feedback_30days": True,
+                "post_feedback_60days": True,
+                "post_feedback_90days": True,
                 "it_equipment_status": "Delivered",
                 "bgv_status": "Verified",
-                "day1_orientation_status": STATUS_COMPLETED,
-                "post_onboarding_status": STATUS_COMPLETED,
                 "probation_status": "Confirmed",
             }
         },
@@ -144,14 +211,25 @@ def seed_demo_data(db):
             "work_mode": WORK_MODE_OFFLINE,
             "asset_shipment_address": None,
             "record": {
-                "overall_status": STATUS_IN_PROGRESS,
-                "overall_progress": 66.7,
-                "current_stage": STAGE_ONBOARDING_DAY,
-                "pre_onboarding_status": STATUS_COMPLETED,
+                "pre_info_received": True,
+                "pre_connect_joiner": True,
+                "pre_it_tickets_status": "Raised",
+                "pre_notify_stakeholders": True,
+                "pre_prepare_schedule": True,
+                "pre_share_schedule": True,
+                "day1_mandatory_forms": True,
+                "day1_employment_docs": True,
+                "day1_hr_induction": True,
+                "day1_announce_joiner": True,
+                "post_id_card_status": "Raised",
+                "post_hrms_doc_status": "Approved",
+                "post_feedback_1week": False,
+                "post_insurance_pf": False,
+                "post_feedback_30days": False,
+                "post_feedback_60days": False,
+                "post_feedback_90days": False,
                 "it_equipment_status": "Delivered",
                 "bgv_status": "Verified",
-                "day1_orientation_status": STATUS_COMPLETED,
-                "post_onboarding_status": STATUS_IN_PROGRESS,
                 "probation_status": "Under Review",
             }
         },
@@ -171,14 +249,25 @@ def seed_demo_data(db):
             "work_mode": WORK_MODE_ONLINE,
             "asset_shipment_address": "Plot 12, Jubilee Hills, Hyderabad 500033",
             "record": {
-                "overall_status": STATUS_IN_PROGRESS,
-                "overall_progress": 50.0,
-                "current_stage": STAGE_ONBOARDING_DAY,
-                "pre_onboarding_status": STATUS_COMPLETED,
+                "pre_info_received": True,
+                "pre_connect_joiner": True,
+                "pre_it_tickets_status": "Raised",
+                "pre_notify_stakeholders": True,
+                "pre_prepare_schedule": True,
+                "pre_share_schedule": True,
+                "day1_mandatory_forms": True,
+                "day1_employment_docs": True,
+                "day1_hr_induction": False,
+                "day1_announce_joiner": False,
+                "post_id_card_status": "Not Raised",
+                "post_hrms_doc_status": "Pending Approval",
+                "post_feedback_1week": False,
+                "post_insurance_pf": False,
+                "post_feedback_30days": False,
+                "post_feedback_60days": False,
+                "post_feedback_90days": False,
                 "it_equipment_status": "Dispatched",
                 "bgv_status": "Verified",
-                "day1_orientation_status": STATUS_COMPLETED,
-                "post_onboarding_status": STATUS_NOT_STARTED,
                 "probation_status": "Under Review",
             }
         },
@@ -198,14 +287,25 @@ def seed_demo_data(db):
             "work_mode": WORK_MODE_ONLINE,
             "asset_shipment_address": "Powai, Mumbai 400076",
             "record": {
-                "overall_status": STATUS_IN_PROGRESS,
-                "overall_progress": 33.3,
-                "current_stage": STAGE_PRE_ONBOARDING,
-                "pre_onboarding_status": STATUS_IN_PROGRESS,
+                "pre_info_received": True,
+                "pre_connect_joiner": True,
+                "pre_it_tickets_status": "Raised",
+                "pre_notify_stakeholders": False,
+                "pre_prepare_schedule": False,
+                "pre_share_schedule": False,
+                "day1_mandatory_forms": False,
+                "day1_employment_docs": False,
+                "day1_hr_induction": False,
+                "day1_announce_joiner": False,
+                "post_id_card_status": "Not Raised",
+                "post_hrms_doc_status": "Pending Approval",
+                "post_feedback_1week": False,
+                "post_insurance_pf": False,
+                "post_feedback_30days": False,
+                "post_feedback_60days": False,
+                "post_feedback_90days": False,
                 "it_equipment_status": "Dispatched",
                 "bgv_status": "Verified",
-                "day1_orientation_status": "Scheduled",
-                "post_onboarding_status": STATUS_NOT_STARTED,
                 "probation_status": "Under Review",
             }
         },
@@ -225,14 +325,25 @@ def seed_demo_data(db):
             "work_mode": WORK_MODE_OFFLINE,
             "asset_shipment_address": None,
             "record": {
-                "overall_status": STATUS_NOT_STARTED,
-                "overall_progress": 0.0,
-                "current_stage": STAGE_PRE_ONBOARDING,
-                "pre_onboarding_status": STATUS_NOT_STARTED,
+                "pre_info_received": False,
+                "pre_connect_joiner": False,
+                "pre_it_tickets_status": "Not Raised",
+                "pre_notify_stakeholders": False,
+                "pre_prepare_schedule": False,
+                "pre_share_schedule": False,
+                "day1_mandatory_forms": False,
+                "day1_employment_docs": False,
+                "day1_hr_induction": False,
+                "day1_announce_joiner": False,
+                "post_id_card_status": "Not Raised",
+                "post_hrms_doc_status": "Pending Approval",
+                "post_feedback_1week": False,
+                "post_insurance_pf": False,
+                "post_feedback_30days": False,
+                "post_feedback_60days": False,
+                "post_feedback_90days": False,
                 "it_equipment_status": "Pending Dispatch",
-                "bgv_status": STATUS_IN_PROGRESS,
-                "day1_orientation_status": "Scheduled",
-                "post_onboarding_status": STATUS_NOT_STARTED,
+                "bgv_status": "In Progress",
                 "probation_status": "Under Review",
             }
         },
@@ -240,7 +351,7 @@ def seed_demo_data(db):
 
     for item in demo_associates:
         rec_data = item.pop("record")
-        assoc = Associate(**item, status=rec_data["overall_status"])
+        assoc = Associate(**item, status=STATUS_NOT_STARTED)
         db.add(assoc)
         db.commit()
         db.refresh(assoc)
@@ -251,6 +362,7 @@ def seed_demo_data(db):
             **rec_data
         )
         db.add(rec)
+        db.commit()
 
         log = ActivityLog(
             associate_id=assoc.id,
@@ -260,3 +372,6 @@ def seed_demo_data(db):
         )
         db.add(log)
         db.commit()
+
+        recalculate_associate_progress(db, assoc.id)
+
