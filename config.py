@@ -17,3 +17,8 @@ UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 APP_TITLE = "Onboarding Operations"
 APP_SUBTITLE = "Streamlined onboarding operations and candidate readiness tracking."
+
+# Security & Authentication Configuration
+JWT_SECRET = os.getenv("JWT_SECRET", "hr_onboarding_super_secret_jwt_key_2026")
+JWT_ALGORITHM = "HS256"
+

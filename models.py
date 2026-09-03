@@ -27,11 +27,12 @@ class Associate(Base):
     __tablename__ = "associates"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    name_as_per_aadhar = Column(String(150), nullable=True)
     first_name = Column(String(100), nullable=False)
-    last_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=True, default="")
     preferred_name = Column(String(100), nullable=True)
     personal_email = Column(String(150), nullable=False)
-    phone = Column(String(50), nullable=False)
+    phone = Column(String(50), nullable=True, default="")
     date_of_birth = Column(Date, nullable=True)
     address = Column(Text, nullable=True)
     city = Column(String(100), nullable=True)
@@ -43,14 +44,16 @@ class Associate(Base):
     emergency_contact_relationship = Column(String(50), nullable=True)
     
     designation = Column(String(150), nullable=False)
-    department = Column(String(100), nullable=False)
+    department = Column(String(100), nullable=True, default="General")
     grade = Column(String(50), nullable=True)
     date_of_joining = Column(Date, nullable=False)
+    is_fresher = Column(Boolean, default=False)
+    last_working_day = Column(Date, nullable=True)
     location = Column(String(100), nullable=False)
-    reporting_manager = Column(String(150), nullable=False)
+    reporting_manager = Column(String(150), nullable=True, default="HR Manager")
     employee_id = Column(String(50), unique=True, nullable=False)
     work_email = Column(String(150), nullable=True)
-    work_mode = Column(String(20), nullable=False, default="Online")  # Online or Offline
+    work_mode = Column(String(20), nullable=False, default="Virtual")  # In-person or Virtual
     asset_shipment_address = Column(Text, nullable=True)
     
     status = Column(String(50), nullable=False, default="Not Started")
@@ -64,7 +67,11 @@ class Associate(Base):
     @property
     def full_name(self) -> str:
         """Returns the full display name of the associate."""
-        return f"{self.first_name} {self.last_name}"
+        if self.name_as_per_aadhar:
+            return self.name_as_per_aadhar
+        if self.last_name:
+            return f"{self.first_name} {self.last_name}".strip()
+        return self.first_name or ""
 
 
 class OnboardingRecord(Base):
@@ -86,6 +93,7 @@ class OnboardingRecord(Base):
     day1_orientation_status = Column(String(50), default="Scheduled")  # Not Started, Scheduled, Completed
     post_onboarding_status = Column(String(50), default="Not Started")  # Not Started, In Progress, Completed
     probation_status = Column(String(50), default="Under Review")  # Under Review, Confirmed
+    feedback_probation_status = Column(String(50), default="Not Started")  # Not Started, In Progress, Completed
 
     # Pre-Onboarding Specific Checklist Fields
     pre_info_received = Column(Boolean, default=False)
@@ -109,6 +117,7 @@ class OnboardingRecord(Base):
     post_feedback_30days = Column(Boolean, default=False)
     post_feedback_60days = Column(Boolean, default=False)
     post_feedback_90days = Column(Boolean, default=False)
+    post_probation_completed = Column(Boolean, default=False)
 
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
@@ -132,3 +141,19 @@ class ActivityLog(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     associate = relationship("Associate", back_populates="activity_logs")
+
+
+class User(Base):
+    """
+    Represents an application user (HR Admin / Manager).
+    Password is saved in password_token form as an encrypted/signed JWT token.
+    """
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    full_name = Column(String(150), nullable=False)
+    email = Column(String(150), unique=True, nullable=False, index=True)
+    password_token = Column(Text, nullable=False)  # JWT Encoded Password Token
+    role = Column(String(50), nullable=False, default="HR Admin")
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+

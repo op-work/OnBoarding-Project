@@ -11,7 +11,7 @@ from components.status_badge import render_status_badge
 from services.associate_service import AssociateService
 from services.progress_service import ProgressService
 from services.activity_service import ActivityService
-from utils.constants import STAGE_PRE_ONBOARDING, STAGE_ONBOARDING_DAY, STAGE_POST_ONBOARDING
+from utils.constants import STAGE_PRE_ONBOARDING, STAGE_ONBOARDING_DAY, STAGE_POST_ONBOARDING, STAGE_FEEDBACK_PROBATION
 from utils.formatting import format_datetime
 from utils.html_utils import clean_html
 
@@ -51,7 +51,8 @@ def render_associate_details_page(db: Session):
     stages_map = [
         (STAGE_PRE_ONBOARDING, "pre_onboarding"),
         (STAGE_ONBOARDING_DAY, "onboarding_day"),
-        (STAGE_POST_ONBOARDING, "post_onboarding")
+        (STAGE_POST_ONBOARDING, "post_onboarding"),
+        (STAGE_FEEDBACK_PROBATION, "feedback_probation")
     ]
 
     for stage_name, page_key in stages_map:

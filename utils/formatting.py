@@ -6,12 +6,12 @@ def format_date(dt: Optional[datetime.date]) -> str:
         return "N/A"
     if isinstance(dt, datetime.datetime):
         dt = dt.date()
-    return dt.strftime("%d %b %Y")
+    return dt.strftime("%d/%m/%Y")
 
 def format_datetime(dt: Optional[datetime.datetime]) -> str:
     if not dt:
         return "N/A"
-    return dt.strftime("%d %b %Y, %I:%M %p")
+    return dt.strftime("%d/%m/%Y, %I:%M %p")
 
 def calculate_feedback_due_date(doj: datetime.date, days_offset: int) -> datetime.date:
     if isinstance(doj, datetime.datetime):

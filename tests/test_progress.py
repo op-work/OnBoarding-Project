@@ -40,59 +40,49 @@ class TestProgress(unittest.TestCase):
         self.db.add(rec)
         self.db.commit()
 
-        # 1. Initial State: 0 / 17 items verified
+        # 1. Initial State: 0 / 14 items verified
         pct, status = recalculate_associate_progress(self.db, assoc.id)
         self.assertEqual(pct, 0.0)
         self.assertEqual(status, "Not Started")
         self.assertEqual(rec.current_stage, "Pre-Onboarding")
         self.assertIsNone(rec.completed_at)
 
-        # 2. Partial Pre-Onboarding: 3 / 6 items verified (3/17 total = 17.6%)
+        # 2. Partial Pre-Onboarding: 3 / 6 items verified (3/14 total = 21.4%)
         rec.pre_info_received = True
         rec.pre_connect_joiner = True
         rec.pre_it_tickets_status = "Raised"
         pct, status = recalculate_associate_progress(self.db, assoc.id)
-        self.assertEqual(pct, 17.6)
+        self.assertEqual(pct, 21.4)
         self.assertEqual(status, "In Progress")
         self.assertEqual(rec.pre_onboarding_status, "In Progress")
         self.assertEqual(rec.current_stage, "Pre-Onboarding")
 
-        # 3. Complete Pre-Onboarding: 6 / 6 items verified (6/17 total = 35.3%)
+        # 3. Complete Pre-Onboarding: 6 / 6 items verified (6/14 total = 42.9%)
         rec.pre_notify_stakeholders = True
         rec.pre_prepare_schedule = True
         rec.pre_share_schedule = True
         pct, status = recalculate_associate_progress(self.db, assoc.id)
-        self.assertEqual(pct, 35.3)
+        self.assertEqual(pct, 42.9)
         self.assertEqual(status, "In Progress")
         self.assertEqual(rec.pre_onboarding_status, "Completed")
         self.assertEqual(rec.current_stage, "Onboarding Day")
 
-        # 4. Complete Onboarding Day: 4 / 4 items verified (10/17 total = 58.8%)
+        # 4. Complete Onboarding Day: 4 / 4 items verified (10/14 total = 71.4%)
         rec.day1_mandatory_forms = True
         rec.day1_employment_docs = True
         rec.day1_hr_induction = True
         rec.day1_announce_joiner = True
         pct, status = recalculate_associate_progress(self.db, assoc.id)
-        self.assertEqual(pct, 58.8)
+        self.assertEqual(pct, 71.4)
         self.assertEqual(status, "In Progress")
         self.assertEqual(rec.day1_orientation_status, "Completed")
         self.assertEqual(rec.current_stage, "Post-Onboarding")
 
-        # 5. Partial Post-Onboarding: 4 / 7 items verified (14/17 total = 82.4%)
+        # 5. Complete Post-Onboarding: 4 / 4 items verified (14/14 total = 100.0%)
         rec.post_id_card_status = "Raised"
         rec.post_hrms_doc_status = "Approved"
         rec.post_feedback_1week = True
         rec.post_insurance_pf = True
-        pct, status = recalculate_associate_progress(self.db, assoc.id)
-        self.assertEqual(pct, 82.4)
-        self.assertEqual(status, "In Progress")
-        self.assertEqual(rec.post_onboarding_status, "In Progress")
-        self.assertEqual(rec.current_stage, "Post-Onboarding")
-
-        # 6. Complete ALL Stages & Checklists: 17 / 17 items verified (100.0%)
-        rec.post_feedback_30days = True
-        rec.post_feedback_60days = True
-        rec.post_feedback_90days = True
         pct, status = recalculate_associate_progress(self.db, assoc.id)
 
         # MUST BE 100% COMPLETE AND STATUS "Completed"
@@ -105,7 +95,18 @@ class TestProgress(unittest.TestCase):
         self.assertIsNotNone(rec.completed_at)
         self.assertEqual(rec.it_equipment_status, "Delivered")
         self.assertEqual(rec.bgv_status, "Verified")
+
+        # 6. Test Feedback & Probation Stage (Stage 4) independently
+        rec.post_feedback_30days = True
+        rec.post_feedback_60days = True
+        rec.post_feedback_90days = True
+        rec.post_probation_completed = True
+        pct, status = recalculate_associate_progress(self.db, assoc.id)
+
+        self.assertEqual(rec.feedback_probation_status, "Completed")
         self.assertEqual(rec.probation_status, "Confirmed")
+        # Primary onboarding progress remains 100.0%
+        self.assertEqual(pct, 100.0)
 
         # 7. Test ProgressService overall progress helper
         overall = ProgressService.get_overall_progress(self.db, assoc.id)
@@ -114,6 +115,7 @@ class TestProgress(unittest.TestCase):
         self.assertEqual(overall["stages"]["Pre-Onboarding"]["progress_pct"], 100.0)
         self.assertEqual(overall["stages"]["Onboarding Day"]["progress_pct"], 100.0)
         self.assertEqual(overall["stages"]["Post-Onboarding"]["progress_pct"], 100.0)
+        self.assertEqual(overall["stages"]["Feedback & Probation"]["progress_pct"], 100.0)
 
     def test_out_of_order_and_toggling_items(self):
         """Tests toggling items off and performing out-of-order stage updates."""
@@ -132,25 +134,22 @@ class TestProgress(unittest.TestCase):
         assoc = AssociateService.create_associate(self.db, data)
         rec = assoc.onboarding_record
 
-        # Check all 7 Post-Onboarding items without checking Pre-Onboarding (7/17 items = 41.2%)
+        # Check all 4 Post-Onboarding items without checking Pre-Onboarding (4/14 items = 28.6%)
         rec.post_id_card_status = "Raised"
         rec.post_hrms_doc_status = "Approved"
         rec.post_feedback_1week = True
         rec.post_insurance_pf = True
-        rec.post_feedback_30days = True
-        rec.post_feedback_60days = True
-        rec.post_feedback_90days = True
 
         pct, status = recalculate_associate_progress(self.db, assoc.id)
-        self.assertEqual(pct, 41.2)
+        self.assertEqual(pct, 28.6)
         self.assertEqual(status, "In Progress")
         self.assertEqual(rec.post_onboarding_status, "Completed")
         self.assertEqual(rec.current_stage, "Pre-Onboarding") # Pre-Onboarding still needs completion
 
         # Uncheck items
-        rec.post_feedback_90days = False
+        rec.post_insurance_pf = False
         pct, status = recalculate_associate_progress(self.db, assoc.id)
-        self.assertEqual(pct, 35.3) # 6/17 items
+        self.assertEqual(pct, 21.4) # 3/14 items
         self.assertEqual(rec.post_onboarding_status, "In Progress")
 
     def test_draft_associate_progress(self):

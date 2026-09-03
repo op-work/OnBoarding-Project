@@ -57,12 +57,12 @@ def render_post_onboarding_page(db: Session):
     </div>
     """, unsafe_allow_html=True)
 
-    # Post-Onboarding Stage Progress Bar (7 Stages: 14.3% increments)
+    # Post-Onboarding Stage Progress Bar (4 Stages: 25% increments)
     p_col1, p_col2 = st.columns([4, 1])
     with p_col1:
         st.progress(stage_progress['progress_pct'] / 100.0)
     with p_col2:
-        st.markdown(f"**{stage_progress['progress_pct']}%** ({stage_progress['completed']}/7 Verified)")
+        st.markdown(f"**{stage_progress['progress_pct']}%** ({stage_progress['completed']}/4 Verified)")
 
     st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
     st.markdown("### Post-Onboarding Milestone Checklist")
@@ -170,63 +170,6 @@ def render_post_onboarding_page(db: Session):
                 rec.post_insurance_pf = chk4
                 recalculate_associate_progress(db, assoc.id)
                 ActivityService.log_activity(db, "Post-Onboarding Checklist", f"Insurance & PF Processing set to {chk4}", assoc.id)
-                st.toast("Post-onboarding status updated!")
-                st.rerun()
-
-    # Item 5: 30-Day Feedback
-    with st.container(border=True):
-        c1, c2, c3 = st.columns([2.5, 4.5, 3])
-        with c1:
-            st.markdown("**5. 30-Day Feedback**")
-            st.caption("1-Month Onboarding Survey")
-        with c2:
-            st.write("Send the 30-day feedback form to the associate over mail.")
-        with c3:
-            is_done5 = bool(rec.post_feedback_30days)
-            st.markdown(render_status_badge("Completed" if is_done5 else "Not Started"), unsafe_allow_html=True)
-            chk5 = st.checkbox("Completed", value=is_done5, key="chk_post_fb_30d")
-            if chk5 != is_done5:
-                rec.post_feedback_30days = chk5
-                recalculate_associate_progress(db, assoc.id)
-                ActivityService.log_activity(db, "Post-Onboarding Checklist", f"30-Day Feedback set to {chk5}", assoc.id)
-                st.toast("Post-onboarding status updated!")
-                st.rerun()
-
-    # Item 6: 60-Day Feedback
-    with st.container(border=True):
-        c1, c2, c3 = st.columns([2.5, 4.5, 3])
-        with c1:
-            st.markdown("**6. 60-Day Feedback**")
-            st.caption("2-Month Onboarding Survey")
-        with c2:
-            st.write("Send the 60-day feedback form to the associate over mail.")
-        with c3:
-            is_done6 = bool(rec.post_feedback_60days)
-            st.markdown(render_status_badge("Completed" if is_done6 else "Not Started"), unsafe_allow_html=True)
-            chk6 = st.checkbox("Completed", value=is_done6, key="chk_post_fb_60d")
-            if chk6 != is_done6:
-                rec.post_feedback_60days = chk6
-                recalculate_associate_progress(db, assoc.id)
-                ActivityService.log_activity(db, "Post-Onboarding Checklist", f"60-Day Feedback set to {chk6}", assoc.id)
-                st.toast("Post-onboarding status updated!")
-                st.rerun()
-
-    # Item 7: 90-Day Feedback
-    with st.container(border=True):
-        c1, c2, c3 = st.columns([2.5, 4.5, 3])
-        with c1:
-            st.markdown("**7. 90-Day Feedback**")
-            st.caption("3-Month Onboarding Survey")
-        with c2:
-            st.write("Send the 90-day feedback form to the associate over mail.")
-        with c3:
-            is_done7 = bool(rec.post_feedback_90days)
-            st.markdown(render_status_badge("Completed" if is_done7 else "Not Started"), unsafe_allow_html=True)
-            chk7 = st.checkbox("Completed", value=is_done7, key="chk_post_fb_90d")
-            if chk7 != is_done7:
-                rec.post_feedback_90days = chk7
-                recalculate_associate_progress(db, assoc.id)
-                ActivityService.log_activity(db, "Post-Onboarding Checklist", f"90-Day Feedback set to {chk7}", assoc.id)
                 st.toast("Post-onboarding status updated!")
                 st.rerun()
 

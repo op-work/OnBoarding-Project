@@ -91,8 +91,23 @@ def render_onboarding_dashboard_page(db: Session):
             title=STAGE_POST_ONBOARDING,
             description=STAGE_DESCRIPTIONS[STAGE_POST_ONBOARDING],
             completed=s_info.get("completed", 0),
-            total=s_info.get("total", 7),
+            total=s_info.get("total", 4),
             pct=s_info.get("progress_pct", 0.0),
             status=s_info.get("status", "Not Started"),
             page_key="post_onboarding"
         )
+
+    st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+    st.markdown("### Post-Onboarding Milestone & Probation (Stage 4)")
+
+    from utils.constants import STAGE_FEEDBACK_PROBATION
+    fb_info = overall["stages"].get(STAGE_FEEDBACK_PROBATION, {})
+    render_stage_card(
+        title=STAGE_FEEDBACK_PROBATION,
+        description=STAGE_DESCRIPTIONS[STAGE_FEEDBACK_PROBATION],
+        completed=fb_info.get("completed", 0),
+        total=fb_info.get("total", 4),
+        pct=fb_info.get("progress_pct", 0.0),
+        status=fb_info.get("status", "Not Started"),
+        page_key="feedback_probation"
+    )

@@ -7,6 +7,7 @@ import os
 import streamlit as st
 from config import APP_TITLE, BASE_DIR
 from database import init_db, get_db
+from utils.logger import app_logger
 
 # Streamlit Page Config
 st.set_page_config(
@@ -35,18 +36,33 @@ if "page" in st.query_params:
         st.session_state["page"] = requested_page
     st.query_params.clear()
 
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+
+if "user" not in st.session_state:
+    st.session_state["user"] = None
+
 if "page" not in st.session_state:
     st.session_state["page"] = "onboarding_selection"
 
 if "selected_associate_id" not in st.session_state:
     st.session_state["selected_associate_id"] = None
 
-# Sidebar Navigation Component
+# Authentication Guard: Render Auth Page if not logged in
+if not st.session_state.get("authenticated", False):
+    from views.auth import render_auth_page
+    render_auth_page(db)
+    st.stop()
+
+# Sidebar Navigation Component (Visible only when authenticated)
 from components.sidebar import render_sidebar
 render_sidebar(db)
 
+
 # Application View Routing Engine
 current_page = st.session_state["page"]
+assoc_id = st.session_state.get("selected_associate_id")
+app_logger.info(f"NAVIGATE: Render page '{current_page}' (Selected Associate ID: {assoc_id})")
 
 if current_page == "onboarding_selection":
     from views.onboarding_selection import render_onboarding_selection_page
@@ -71,6 +87,10 @@ elif current_page == "onboarding_day":
 elif current_page == "post_onboarding":
     from views.post_onboarding import render_post_onboarding_page
     render_post_onboarding_page(db)
+
+elif current_page == "feedback_probation":
+    from views.feedback_probation import render_feedback_probation_page
+    render_feedback_probation_page(db)
 
 elif current_page == "existing_associates":
     from views.existing_associates import render_existing_associates_page

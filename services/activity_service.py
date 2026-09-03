@@ -6,6 +6,7 @@ Logs and fetches system audit events and onboarding milestone activity logs.
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from models import ActivityLog
+from utils.logger import app_logger
 
 class ActivityService:
     @staticmethod
@@ -24,7 +25,7 @@ class ActivityService:
         associate_id: Optional[int] = None,
         performed_by: str = "Onboarding Admin"
     ) -> ActivityLog:
-        """Records a new audit log entry in the database."""
+        """Records a new audit log entry in database and app.log file."""
         log = ActivityLog(
             associate_id=associate_id,
             action=action,
@@ -34,4 +35,9 @@ class ActivityService:
         db.add(log)
         db.commit()
         db.refresh(log)
+
+        # Append structured message to app.log
+        assoc_info = f"[Associate ID: {associate_id}] " if associate_id else ""
+        app_logger.info(f"{assoc_info}AUDIT: {action} - {description} (By: {performed_by})")
+
         return log

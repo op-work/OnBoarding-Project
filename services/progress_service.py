@@ -6,7 +6,7 @@ Calculates stage progress and overall onboarding milestone metrics for associate
 from typing import Dict, Any
 from sqlalchemy.orm import Session
 from models import OnboardingRecord
-from utils.constants import STAGE_PRE_ONBOARDING, STAGE_ONBOARDING_DAY, STAGE_POST_ONBOARDING, STATUS_COMPLETED, STATUS_IN_PROGRESS, STATUS_NOT_STARTED
+from utils.constants import STAGE_PRE_ONBOARDING, STAGE_ONBOARDING_DAY, STAGE_POST_ONBOARDING, STAGE_FEEDBACK_PROBATION, STATUS_COMPLETED, STATUS_IN_PROGRESS, STATUS_NOT_STARTED
 
 class ProgressService:
     @staticmethod
@@ -63,19 +63,36 @@ class ProgressService:
                 "total": total_cnt,
                 "detail": detail
             }
+        elif stage == STAGE_FEEDBACK_PROBATION:
+            status = getattr(record, "feedback_probation_status", STATUS_NOT_STARTED)
+            fb_items = [
+                bool(record.post_feedback_30days),
+                bool(record.post_feedback_60days),
+                bool(record.post_feedback_90days),
+                bool(getattr(record, "post_probation_completed", False))
+            ]
+            completed_cnt = sum(1 for item in fb_items if item)
+            total_cnt = 4
+            pct = round((completed_cnt / total_cnt) * 100.0, 1)
+            detail = f"{completed_cnt} / {total_cnt} Milestones Verified ({pct}%)"
+            return {
+                "stage": stage,
+                "status": status,
+                "progress_pct": pct,
+                "completed": completed_cnt,
+                "total": total_cnt,
+                "detail": detail
+            }
         else:
             status = record.post_onboarding_status
             post_items = [
                 record.post_id_card_status == "Raised",
                 record.post_hrms_doc_status == "Approved",
                 bool(record.post_feedback_1week),
-                bool(record.post_insurance_pf),
-                bool(record.post_feedback_30days),
-                bool(record.post_feedback_60days),
-                bool(record.post_feedback_90days)
+                bool(record.post_insurance_pf)
             ]
             completed_cnt = sum(1 for item in post_items if item)
-            total_cnt = 7
+            total_cnt = 4
             pct = round((completed_cnt / total_cnt) * 100.0, 1)
             detail = f"{completed_cnt} / {total_cnt} Milestones Verified ({pct}%)"
             return {
@@ -104,6 +121,7 @@ class ProgressService:
             STAGE_PRE_ONBOARDING: ProgressService.get_stage_progress(db, associate_id, STAGE_PRE_ONBOARDING),
             STAGE_ONBOARDING_DAY: ProgressService.get_stage_progress(db, associate_id, STAGE_ONBOARDING_DAY),
             STAGE_POST_ONBOARDING: ProgressService.get_stage_progress(db, associate_id, STAGE_POST_ONBOARDING),
+            STAGE_FEEDBACK_PROBATION: ProgressService.get_stage_progress(db, associate_id, STAGE_FEEDBACK_PROBATION),
         }
 
         return {

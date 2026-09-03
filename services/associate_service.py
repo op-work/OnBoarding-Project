@@ -8,6 +8,7 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from models import Associate, OnboardingRecord, ActivityLog
 from database import recalculate_associate_progress
+from utils.logger import app_logger
 
 class AssociateService:
     @staticmethod
@@ -17,15 +18,18 @@ class AssociateService:
             count = db.query(Associate).count() + 1
             data["employee_id"] = f"EMP-{datetime.date.today().year}-{count:03d}"
 
-        work_mode = data.get("work_mode", "Online")
+        work_mode = data.get("work_mode", "Virtual")
         status = "Draft" if is_draft else "Not Started"
+        name_aadhar = (data.get("name_as_per_aadhar") or data.get("first_name") or "").strip()
+        first_name = name_aadhar if name_aadhar else data.get("first_name", "").strip()
 
         assoc = Associate(
-            first_name=data.get("first_name", "").strip(),
+            name_as_per_aadhar=name_aadhar,
+            first_name=first_name,
             last_name=data.get("last_name", "").strip(),
-            preferred_name=data.get("preferred_name", "").strip() if data.get("preferred_name") else None,
+            preferred_name=data.get("preferred_name"),
             personal_email=data.get("personal_email", "").strip(),
-            phone=data.get("phone", "").strip(),
+            phone=data.get("phone", ""),
             date_of_birth=data.get("date_of_birth"),
             address=data.get("address"),
             city=data.get("city"),
@@ -36,15 +40,17 @@ class AssociateService:
             emergency_contact_phone=data.get("emergency_contact_phone"),
             emergency_contact_relationship=data.get("emergency_contact_relationship"),
             designation=data.get("designation", "").strip(),
-            department=data.get("department", "").strip(),
+            department=data.get("department", "General").strip() or "General",
             grade=data.get("grade"),
             date_of_joining=data.get("date_of_joining"),
+            is_fresher=data.get("is_fresher", False),
+            last_working_day=None if data.get("is_fresher") else data.get("last_working_day"),
             location=data.get("location", "").strip(),
-            reporting_manager=data.get("reporting_manager", "").strip(),
+            reporting_manager=data.get("reporting_manager", "HR Manager").strip() or "HR Manager",
             employee_id=data.get("employee_id", "").strip(),
             work_email=data.get("work_email"),
             work_mode=work_mode,
-            asset_shipment_address=data.get("asset_shipment_address") if work_mode == "Online" else None,
+            asset_shipment_address=data.get("asset_shipment_address") if work_mode in ["Virtual", "Online"] else None,
             status=status,
         )
         db.add(assoc)
@@ -57,7 +63,7 @@ class AssociateService:
             overall_progress=0.0,
             current_stage="Pre-Onboarding",
             pre_onboarding_status="In Progress",
-            it_equipment_status="Pending Dispatch" if work_mode == "Online" else "Delivered",
+            it_equipment_status="Pending Dispatch" if work_mode in ["Virtual", "Online"] else "Delivered",
             bgv_status="In Progress",
             day1_orientation_status="Scheduled",
             post_onboarding_status="Not Started",
@@ -78,6 +84,8 @@ class AssociateService:
         )
         db.add(log)
         db.commit()
+
+        app_logger.info(f"ASSOCIATE: {action} - {assoc.full_name} ({assoc.employee_id}, {assoc.designation}, {assoc.department})")
 
         return assoc
 
@@ -136,6 +144,7 @@ class AssociateService:
         assoc.updated_at = datetime.datetime.utcnow()
         db.commit()
         db.refresh(assoc)
+        app_logger.info(f"ASSOCIATE: Updated profile for {assoc.full_name} ({assoc.employee_id}) - Fields updated: {list(updates.keys())}")
         return assoc
 
     @staticmethod
@@ -145,7 +154,9 @@ class AssociateService:
         if not assoc:
             return False
 
+        name_emp = f"{assoc.full_name} ({assoc.employee_id})"
         db.delete(assoc)
         db.commit()
+        app_logger.info(f"ASSOCIATE: Deleted record for {name_emp}")
         return True
 

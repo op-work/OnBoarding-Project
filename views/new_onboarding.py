@@ -1,6 +1,6 @@
 """
 New Associate Onboarding Registration View
-Multi-step form for registering candidate profile details, work mode selection, IT shipment address, and initializing stage milestones.
+Streamlined multi-step form for registering candidate profile details based on required 7 fields.
 """
 
 import datetime
@@ -9,13 +9,14 @@ from sqlalchemy.orm import Session
 from components.header import render_header
 from services.associate_service import AssociateService
 from utils.validation import validate_associate_form
-from utils.constants import DEPARTMENTS, LOCATIONS, GRADES, WORK_MODES, WORK_MODE_ONLINE
+from utils.constants import JOB_LOCATIONS, MODES_OF_JOINING
+from utils.formatting import format_date
 
 def render_new_onboarding_page(db: Session):
     """Renders new associate onboarding creation view."""
     render_header(
         title="New Associate Registration",
-        subtitle="Collect associate details, work mode, and initialize onboarding milestone record.",
+        subtitle="Fill in candidate details to initialize onboarding milestone record.",
         breadcrumbs=["Onboarding Operations", "New Onboarding"]
     )
 
@@ -28,92 +29,76 @@ def render_new_onboarding_page(db: Session):
     form_data = st.session_state["new_assoc_form_data"]
 
     if st.session_state["form_step"] == 1:
-        st.markdown("### Step 1: Associate & Job Information")
+        st.markdown("### New Joiner Form")
 
-        st.markdown("#### 1. Personal & Contact Details")
-        c1, c2, c3 = st.columns(3)
+        c1, c2 = st.columns(2)
         with c1:
-            first_name = st.text_input("First Name / Associate Name *", value=form_data.get("first_name", ""))
+            name_as_per_aadhar = st.text_input(
+                "Name as per Aadhar *",
+                value=form_data.get("name_as_per_aadhar", form_data.get("first_name", "")),
+                placeholder="Full Name",
+                help="Type the full candidate name exactly as printed on Aadhar card."
+            )
         with c2:
-            last_name = st.text_input("Last Name *", value=form_data.get("last_name", ""))
-        with c3:
-            preferred_name = st.text_input("Preferred Name", value=form_data.get("preferred_name", ""))
-
-        c4, c5, c6 = st.columns(3)
-        with c4:
-            personal_email = st.text_input("Personal Email *", value=form_data.get("personal_email", ""))
-        with c5:
-            phone = st.text_input("Phone Number *", value=form_data.get("phone", ""))
-        with c6:
-            default_dob = form_data.get("date_of_birth") or datetime.date(2018, 1, 1)
-            dob = st.date_input(
-                "Date of Birth",
-                value=default_dob,
-                min_value=datetime.date(1950, 1, 1),
-                max_value=datetime.date(2035, 12, 31)
+            personal_email = st.text_input(
+                "Personal Email ID *",
+                value=form_data.get("personal_email", ""),
+                placeholder="associate@example.com"
             )
 
-        c7, c8, c9 = st.columns(3)
-        with c7:
-            address = st.text_area("Address", value=form_data.get("address", ""), height=68)
-        with c8:
-            city = st.text_input("City", value=form_data.get("city", ""))
-            state = st.text_input("State / Province", value=form_data.get("state", ""))
-        with c9:
-            postal_code = st.text_input("Postal Code", value=form_data.get("postal_code", ""))
-            country = st.text_input("Country", value=form_data.get("country", "India"))
-
-        st.markdown("#### 2. Emergency Contact Information")
-        ec1, ec2, ec3 = st.columns(3)
-        with ec1:
-            ec_name = st.text_input("Emergency Contact Name", value=form_data.get("emergency_contact_name", ""))
-        with ec2:
-            ec_phone = st.text_input("Emergency Contact Phone", value=form_data.get("emergency_contact_phone", ""))
-        with ec3:
-            ec_rel = st.text_input("Relationship", value=form_data.get("emergency_contact_relationship", ""))
-
-        st.markdown("#### 3. Employment & Job Details")
-        j1, j2, j3 = st.columns(3)
-        with j1:
-            designation = st.text_input("Designation / Position *", value=form_data.get("designation", ""))
-        with j2:
-            department_idx = DEPARTMENTS.index(form_data["department"]) if form_data.get("department") in DEPARTMENTS else 0
-            department = st.selectbox("Department *", options=DEPARTMENTS, index=department_idx)
-        with j3:
-            grade_idx = GRADES.index(form_data["grade"]) if form_data.get("grade") in GRADES else 0
-            grade = st.selectbox("Grade", options=GRADES, index=grade_idx)
-
-        j4, j5, j6 = st.columns(3)
-        with j4:
+        c3, c4 = st.columns(2)
+        with c3:
             default_doj = form_data.get("date_of_joining") or datetime.date.today()
             doj = st.date_input(
-                "Date of Joining *",
+                "Confirmed Date of Joining *",
                 value=default_doj,
                 min_value=datetime.date(2018, 1, 1),
-                max_value=datetime.date(2035, 12, 31)
+                max_value=datetime.date(2035, 12, 31),
+                format="DD/MM/YYYY"
             )
-        with j5:
-            location_idx = LOCATIONS.index(form_data["location"]) if form_data.get("location") in LOCATIONS else 0
-            location = st.selectbox("Location *", options=LOCATIONS, index=location_idx)
-        with j6:
-            reporting_manager = st.text_input("Reporting Manager *", value=form_data.get("reporting_manager", ""))
+        with c4:
+            designation = st.text_input(
+                "Communicated Designation *",
+                value=form_data.get("designation", ""),
+                placeholder="e.g. Senior Software Engineer"
+            )
 
-        j7, j8 = st.columns(2)
-        with j7:
-            emp_id = st.text_input("Employee / Associate ID (Auto-generated if empty)", value=form_data.get("employee_id", ""))
-        with j8:
-            work_email = st.text_input("Work Email", value=form_data.get("work_email", ""))
+        c5, c6 = st.columns(2)
+        with c5:
+            loc_idx = JOB_LOCATIONS.index(form_data["location"]) if form_data.get("location") in JOB_LOCATIONS else 0
+            location = st.selectbox("Job Location *", options=JOB_LOCATIONS, index=loc_idx)
+        with c6:
+            mode_idx = MODES_OF_JOINING.index(form_data["work_mode"]) if form_data.get("work_mode") in MODES_OF_JOINING else 0
+            work_mode = st.selectbox("Mode of Joining *", options=MODES_OF_JOINING, index=mode_idx)
 
-        st.markdown("#### 4. Work Mode & Asset Delivery")
-        wm_idx = WORK_MODES.index(form_data["work_mode"]) if form_data.get("work_mode") in WORK_MODES else 0
-        work_mode = st.radio("Work Mode *", options=WORK_MODES, horizontal=True, index=wm_idx, key="new_assoc_work_mode")
+        st.markdown("#### Previous Work Experience")
+        is_fresher = st.checkbox(
+            "Fresher (Check if candidate has no prior work experience)",
+            value=form_data.get("is_fresher", False)
+        )
+
+        last_working_day = None
+        if not is_fresher:
+            default_lwd = form_data.get("last_working_day") or datetime.date.today()
+            last_working_day = st.date_input(
+                "Last Working Day with Previous Employer *",
+                value=default_lwd,
+                min_value=datetime.date(2015, 1, 1),
+                max_value=datetime.date(2035, 12, 31),
+                format="DD/MM/YYYY"
+            )
 
         asset_shipment_address = ""
-        if work_mode == WORK_MODE_ONLINE:
-            st.info("Online joiner selected. Laptop and welcome assets will be shipped to the address specified below.")
-            asset_shipment_address = st.text_area("Asset Shipment Address *", value=form_data.get("asset_shipment_address", ""))
+        if work_mode == "Virtual":
+            st.info("Virtual mode selected. Laptop and welcome assets will be shipped to the candidate's address.")
+            asset_shipment_address = st.text_area(
+                "Associate Address for Asset Delivery *",
+                value=form_data.get("asset_shipment_address", ""),
+                height=80,
+                placeholder="Enter complete delivery address with PIN code"
+            )
         else:
-            st.info("Offline (In-Office) joiner selected. Laptop and welcome assets will be handed over at reception on Onboarding Day.")
+            st.info("In-person mode selected. Laptop and welcome assets will be handed over at reception on joining day.")
 
         st.markdown("<br>", unsafe_allow_html=True)
         col_b1, col_b2, col_b3 = st.columns([1, 1, 2])
@@ -129,35 +114,22 @@ def render_new_onboarding_page(db: Session):
             st.rerun()
 
         curr_data = {
-            "first_name": first_name,
-            "last_name": last_name,
-            "preferred_name": preferred_name,
+            "name_as_per_aadhar": name_as_per_aadhar,
+            "first_name": name_as_per_aadhar,
+            "last_name": "",
             "personal_email": personal_email,
-            "phone": phone,
-            "date_of_birth": dob,
-            "address": address,
-            "city": city,
-            "state": state,
-            "postal_code": postal_code,
-            "country": country,
-            "emergency_contact_name": ec_name,
-            "emergency_contact_phone": ec_phone,
-            "emergency_contact_relationship": ec_rel,
-            "designation": designation,
-            "department": department,
-            "grade": grade,
             "date_of_joining": doj,
+            "is_fresher": is_fresher,
+            "last_working_day": last_working_day,
+            "designation": designation,
             "location": location,
-            "reporting_manager": reporting_manager,
-            "employee_id": emp_id,
-            "work_email": work_email,
             "work_mode": work_mode,
             "asset_shipment_address": asset_shipment_address
         }
 
         if btn_draft:
-            if not first_name or not personal_email:
-                st.error("First name and personal email are required to save a draft.")
+            if not name_as_per_aadhar or not personal_email:
+                st.error("Name as per Aadhar and personal email are required to save a draft.")
             else:
                 assoc = AssociateService.create_associate(db, curr_data, is_draft=True)
                 st.success(f"Draft saved for {assoc.full_name}! Employee ID: {assoc.employee_id}")
@@ -188,18 +160,19 @@ def render_new_onboarding_page(db: Session):
 
         c1, c2 = st.columns(2)
         with c1:
-            st.markdown(f"**Associate Name:** {data.get('first_name')} {data.get('last_name')}")
-            st.markdown(f"**Personal Email:** {data.get('personal_email')}")
-            st.markdown(f"**Phone:** {data.get('phone')}")
-            st.markdown(f"**Work Mode:** `{data.get('work_mode')}`")
-            if data.get("work_mode") == WORK_MODE_ONLINE:
-                st.markdown(f"**Shipment Address:** {data.get('asset_shipment_address')}")
+            st.markdown(f"**Name as per Aadhar:** {data.get('name_as_per_aadhar') or data.get('first_name')}")
+            st.markdown(f"**Personal Email ID:** {data.get('personal_email')}")
+            st.markdown(f"**Confirmed Date of Joining:** {format_date(data.get('date_of_joining'))}")
+            if data.get("is_fresher"):
+                st.markdown("**Work Experience:** `Fresher`")
+            else:
+                st.markdown(f"**Last Working Day:** {format_date(data.get('last_working_day'))}")
         with c2:
-            st.markdown(f"**Designation:** {data.get('designation')}")
-            st.markdown(f"**Department:** {data.get('department')}")
-            st.markdown(f"**Date of Joining:** {data.get('date_of_joining')}")
-            st.markdown(f"**Location:** {data.get('location')}")
-            st.markdown(f"**Reporting Manager:** {data.get('reporting_manager')}")
+            st.markdown(f"**Communicated Designation:** {data.get('designation')}")
+            st.markdown(f"**Job Location:** {data.get('location')}")
+            st.markdown(f"**Mode of Joining:** `{data.get('work_mode')}`")
+            if data.get("work_mode") == "Virtual":
+                st.markdown(f"**Asset Delivery Address:** {data.get('asset_shipment_address')}")
 
         st.markdown("---")
         confirm = st.checkbox("I confirm that the associate information and onboarding setup have been reviewed.")

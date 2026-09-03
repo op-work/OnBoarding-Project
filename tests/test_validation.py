@@ -19,34 +19,47 @@ class TestValidation(unittest.TestCase):
 
     def test_associate_form_validation(self):
         valid_data = {
-            "first_name": "Rohan",
-            "last_name": "Kulkarni",
+            "name_as_per_aadhar": "Rohan Kulkarni",
             "personal_email": "rohan@example.com",
-            "phone": "+91 9123456789",
-            "designation": "Software Engineer",
-            "department": "Engineering",
-            "location": "Pune",
-            "reporting_manager": "Manager Name",
             "date_of_joining": datetime.date.today(),
-            "work_mode": "Online",
+            "is_fresher": False,
+            "last_working_day": datetime.date.today(),
+            "designation": "Software Engineer",
+            "location": "Pune",
+            "work_mode": "Virtual",
             "asset_shipment_address": "Pune Maharashtra 411001"
         }
         is_valid, errors = validate_associate_form(valid_data)
         self.assertTrue(is_valid)
         self.assertEqual(len(errors), 0)
 
-        # Online mode missing shipment address
-        invalid_online = valid_data.copy()
-        invalid_online["asset_shipment_address"] = ""
-        is_valid, errors = validate_associate_form(invalid_online)
+        # Virtual mode missing shipment address
+        invalid_virtual = valid_data.copy()
+        invalid_virtual["asset_shipment_address"] = ""
+        is_valid, errors = validate_associate_form(invalid_virtual)
         self.assertFalse(is_valid)
         self.assertIn("asset_shipment_address", errors)
 
-        # Offline mode without shipment address should be valid
-        valid_offline = valid_data.copy()
-        valid_offline["work_mode"] = "Offline"
-        valid_offline["asset_shipment_address"] = ""
-        is_valid, errors = validate_associate_form(valid_offline)
+        # In-person mode without shipment address should be valid
+        valid_inperson = valid_data.copy()
+        valid_inperson["work_mode"] = "In-person"
+        valid_inperson["asset_shipment_address"] = ""
+        is_valid, errors = validate_associate_form(valid_inperson)
+        self.assertTrue(is_valid)
+
+        # Non-fresher missing last working day should be invalid
+        invalid_experienced = valid_data.copy()
+        invalid_experienced["is_fresher"] = False
+        invalid_experienced["last_working_day"] = None
+        is_valid, errors = validate_associate_form(invalid_experienced)
+        self.assertFalse(is_valid)
+        self.assertIn("last_working_day", errors)
+
+        # Fresher missing last working day should be valid
+        valid_fresher = valid_data.copy()
+        valid_fresher["is_fresher"] = True
+        valid_fresher["last_working_day"] = None
+        is_valid, errors = validate_associate_form(valid_fresher)
         self.assertTrue(is_valid)
 
 if __name__ == "__main__":

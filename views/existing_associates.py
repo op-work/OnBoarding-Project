@@ -1,6 +1,6 @@
 """
 Existing Associates Directory View
-Provides search, filtering, and milestone inspection for registered associate profiles.
+Provides search, filtering, milestone inspection, and direct 1-step employee data file upload.
 """
 
 import streamlit as st
@@ -9,18 +9,108 @@ from components.header import render_header
 from components.status_badge import render_status_badge
 from services.associate_service import AssociateService
 from services.progress_service import ProgressService
+from services.import_service import ImportService
 from utils.constants import DEPARTMENTS, LOCATIONS, WORK_MODES
 from utils.formatting import format_date
 from utils.html_utils import clean_html
 
+
 def render_existing_associates_page(db: Session):
-    """Renders existing associate directory view."""
+    """Renders existing associate directory view with 1-step employee data file upload."""
     render_header(
         title="Existing Associates Directory",
-        subtitle="Search and view registered associates, check onboarding progress, and manage candidate lifecycles.",
+        subtitle="Search and view registered associates, check onboarding progress, and upload employee records.",
         breadcrumbs=["Onboarding Operations", "Existing Associates"]
     )
 
+    # Top Header & 1-Step Direct File Upload Bar
+    c_head1, c_head2 = st.columns([1.5, 1])
+    with c_head1:
+        st.markdown("### Registered Associates Directory")
+        st.markdown("<p style='font-size: 13px; color: #64748B; margin-top: -8px;'>Manage active employees or upload data directly from your device.</p>", unsafe_allow_html=True)
+    with c_head2:
+        uploaded_file = st.file_uploader(
+            "Upload Employee Data (CSV, Excel, JSON)",
+            key="direct_employee_file_uploader",
+            help="Select a CSV, Excel (.xlsx/.xls), or JSON file directly from your device."
+        )
+
+    # Automatic File Processing & Format Recognition
+    if uploaded_file is not None:
+        file_bytes = uploaded_file.getvalue()
+        file_name = uploaded_file.name
+
+        # Format Recognition & Validation
+        is_supported, format_display_name, detected_ext = ImportService.detect_file_format(file_bytes, file_name)
+
+        if not is_supported:
+            st.error(f"File not supported: '{file_name}'. Please upload a valid CSV, Excel (.xlsx/.xls), or JSON file.")
+        else:
+            st.markdown("""
+            <div style="background: #FFFFFF; border: 1px solid #2563EB; border-left: 4px solid #1E40AF; border-radius: 12px; padding: 16px 20px; margin-top: 10px; margin-bottom: 20px; box-shadow: 0 4px 16px rgba(37, 99, 235, 0.08);">
+                <h4 style="margin: 0 0 4px 0; color: #0F172A; font-size: 15px;">Employee Data Import Preview</h4>
+                <p style="margin: 0; font-size: 12px; color: #2563EB; font-weight: 600;">
+                    Recognized Format: {format_name}
+                </p>
+            </div>
+            """.format(format_name=format_display_name), unsafe_allow_html=True)
+
+            raw_rows = ImportService.parse_file(file_bytes, file_name)
+
+            if not raw_rows:
+                st.error("No valid data rows found in the uploaded file.")
+            else:
+                valid_records, invalid_records = ImportService.process_and_validate(raw_rows, db)
+
+                col_m1, col_m2, col_m3 = st.columns(3)
+                with col_m1:
+                    st.metric("Total Parsed Rows", len(raw_rows))
+                with col_m2:
+                    st.metric("Ready for Import", len(valid_records))
+                with col_m3:
+                    st.metric("Duplicate / Skipped", len(invalid_records))
+
+                if valid_records:
+                    st.markdown("##### Preview Valid Employee Records")
+                    preview_display = []
+                    for vr in valid_records[:10]:  # Show first 10 records
+                        preview_display.append({
+                            "Row #": vr["row_index"],
+                            "Employee ID": vr["employee_id"],
+                            "Action": "Update Existing" if vr["import_status"] == "Update" else "New Record",
+                            "Full Name": vr["full_name"],
+                            "Work Email": vr["email"],
+                            "Designation": vr["designation"],
+                            "Department": vr["department"],
+                            "Location": vr["location"],
+                            "DOJ": str(vr["date_of_joining"]),
+                            "Work Mode": vr["work_mode"]
+                        })
+                    st.dataframe(preview_display, use_container_width=True)
+
+
+                if invalid_records:
+                    st.warning(f"Found {len(invalid_records)} duplicate or incomplete records that will be skipped:")
+                    skipped_display = []
+                    for ir in invalid_records:
+                        skipped_display.append({
+                            "Row #": ir["row_index"],
+                            "Full Name": ir["full_name"],
+                            "Email": ir["email"],
+                            "Issue / Reason": ir["import_issue"]
+                        })
+                    st.dataframe(skipped_display, use_container_width=True)
+
+                st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+                if valid_records:
+                    if st.button(f"Confirm & Ingest {len(valid_records)} Valid Employees", type="primary", use_container_width=True):
+                        created = ImportService.ingest_records(db, valid_records)
+                        st.success(f"Successfully imported {len(created)} employee records into database!")
+                        st.rerun()
+
+    st.markdown("<hr style='margin: 16px 0;' />", unsafe_allow_html=True)
+
+    # Search & Filter Controls
     st.markdown("### Search & Filter Associates")
     c_s, c_d, c_l, c_st, c_wm = st.columns([2, 1, 1, 1, 1])
 

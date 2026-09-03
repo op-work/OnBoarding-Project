@@ -27,8 +27,11 @@ def render_header(title: str, subtitle: str = "", breadcrumbs: list = None, head
         <div style="display: flex; align-items: center; gap: 16px; margin-right: 50px;">
             <span style="font-size: 12px; background: #F1F5F9; color: #475569; padding: 6px 12px; border-radius: 20px; font-weight: 600;">{current_date_str}</span>
             <a href="?page=onboarding_selection" target="_self" title="Go to Home Page (Onboarding Selection)" style="display: flex; align-items: center; text-decoration: none;" class="company-header-logo">
-                <img src="{logo_uri}" alt="Company Logo" style="height: auto; max-height: 75px; width: auto; max-width: 300px; object-fit: contain;" />
+                <div style="background: #FFFFFF; padding: 6px 14px; border-radius: 8px; border: 1px solid #E2E8F0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; align-items: center;">
+                    <img src="{logo_uri}" alt="Company Logo" style="height: auto; max-height: 65px; width: auto; max-width: 250px; object-fit: contain;" />
+                </div>
             </a>
+
         </div>
     </div>
     """

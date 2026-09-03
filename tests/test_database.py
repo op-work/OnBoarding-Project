@@ -27,9 +27,9 @@ class TestDatabase(unittest.TestCase):
         records = self.db.query(OnboardingRecord).all()
         self.assertEqual(len(records), 5)
 
-        # Verify Online vs Offline work mode distribution
-        online = self.db.query(Associate).filter(Associate.work_mode == "Online").all()
-        offline = self.db.query(Associate).filter(Associate.work_mode == "Offline").all()
+        # Verify Virtual vs In-person work mode distribution
+        online = self.db.query(Associate).filter(Associate.work_mode.in_(["Virtual", "Online"])).all()
+        offline = self.db.query(Associate).filter(Associate.work_mode.in_(["In-person", "Offline"])).all()
         self.assertGreater(len(online), 0)
         self.assertGreater(len(offline), 0)
 
