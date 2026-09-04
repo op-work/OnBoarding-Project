@@ -20,13 +20,45 @@ class AssociateService:
 
         work_mode = data.get("work_mode", "Virtual")
         status = "Draft" if is_draft else "Not Started"
-        name_aadhar = (data.get("name_as_per_aadhar") or data.get("first_name") or "").strip()
-        first_name = name_aadhar if name_aadhar else data.get("first_name", "").strip()
+
+        raw_first = (data.get("first_name") or "").strip()
+        raw_last = (data.get("last_name") or "").strip()
+        raw_aadhar_name = (data.get("name_as_per_aadhar") or "").strip()
+
+        # Filter out numeric card/ID numbers passed in name fields
+        if raw_aadhar_name and raw_aadhar_name.replace(" ", "").replace("-", "").isdigit():
+            name_aadhar = f"{raw_first} {raw_last}".strip() if raw_first else ""
+        else:
+            name_aadhar = raw_aadhar_name
+
+        if raw_first and not raw_first.replace(" ", "").replace("-", "").isdigit():
+            first_name = raw_first
+            last_name = raw_last
+        elif name_aadhar and " " in name_aadhar:
+            parts = name_aadhar.split(" ")
+            first_name = parts[0]
+            last_name = " ".join(parts[1:])
+        else:
+            first_name = name_aadhar or raw_first or "Associate"
+            last_name = raw_last
+
+        display_name_raw = (data.get("display_name") or "").strip()
+        if display_name_raw and not display_name_raw.replace(" ", "").replace("-", "").isdigit():
+            display_name = display_name_raw
+        elif first_name and first_name.lower() != "associate":
+            display_name = f"{first_name} {last_name}".strip() if last_name else first_name
+        elif name_aadhar:
+            display_name = name_aadhar
+        elif last_name:
+            display_name = last_name
+        else:
+            display_name = data.get("employee_id") or "Associate"
 
         assoc = Associate(
+            display_name=display_name,
             name_as_per_aadhar=name_aadhar,
             first_name=first_name,
-            last_name=data.get("last_name", "").strip(),
+            last_name=last_name,
             preferred_name=data.get("preferred_name"),
             personal_email=data.get("personal_email", "").strip(),
             phone=data.get("phone", ""),
@@ -109,6 +141,7 @@ class AssociateService:
         if search_query:
             pattern = f"%{search_query.strip()}%"
             query = query.filter(
+                (Associate.display_name.ilike(pattern)) |
                 (Associate.first_name.ilike(pattern)) |
                 (Associate.last_name.ilike(pattern)) |
                 (Associate.employee_id.ilike(pattern)) |

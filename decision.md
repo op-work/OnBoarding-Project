@@ -4,11 +4,11 @@ This document maintains a complete log of all key architectural, technical, and 
 
 ---
 
-## Decision 1: Tech Stack Choice (Python + Streamlit + SQLite + SQLAlchemy ORM + Plotly)
-- **Choice**: Python 3.11+, Streamlit UI framework, SQLite file database, SQLAlchemy ORM, Plotly Express charts.
+## Decision 1: Tech Stack Choice (Python + Streamlit + Azure PostgreSQL + SQLAlchemy ORM + Plotly)
+- **Choice**: Python 3.11+, Streamlit UI framework, Azure PostgreSQL database, SQLAlchemy ORM, Plotly Express charts.
 - **Justification**:
-  - Full adherence to constraints (no React, Node, or external frontend servers).
-  - SQLite requires no external daemon, providing zero-configuration local file persistence in `data/onboarding.db`.
+  - Full enterprise relational data management backed by Azure PostgreSQL managed database service.
+  - SSL/TLS encrypted connection with connection pooling for high concurrency and performance.
   - SQLAlchemy ORM ensures safe, parameterized SQL execution, type hints, and transactional integrity.
   - Plotly integrates natively with Streamlit for enterprise analytics charts.
 

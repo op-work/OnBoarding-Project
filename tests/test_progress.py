@@ -3,19 +3,25 @@ import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models import Base, Associate, OnboardingRecord
-from database import recalculate_associate_progress
+from database import engine, recalculate_associate_progress
 from services.progress_service import ProgressService
 from services.associate_service import AssociateService
 
 class TestProgress(unittest.TestCase):
     def setUp(self):
-        self.engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
-        Base.metadata.create_all(bind=self.engine)
-        Session = sessionmaker(bind=self.engine)
+        try:
+            with engine.connect() as conn:
+                pass
+        except Exception as e:
+            self.skipTest(f"Azure PostgreSQL database is not reachable ({e}). Configure valid DB credentials in .env.")
+        Base.metadata.create_all(bind=engine)
+        Session = sessionmaker(bind=engine)
         self.db = Session()
 
     def tearDown(self):
-        self.db.close()
+        if hasattr(self, "db"):
+            self.db.rollback()
+            self.db.close()
 
     def test_progress_calculation_all_combinations(self):
         """Tests progress and status calculations across all stage combinations and completion thresholds."""

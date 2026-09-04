@@ -13,15 +13,7 @@ from models import Associate
 from services.import_service import ImportService, ALL_HR_COLUMNS
 
 
-@pytest.fixture(scope="module")
-def db_session():
-    init_db()
-    db = get_db()
-    yield db
-    db.close()
-
-
-def test_column_mapping_with_missing_columns(db_session):
+def test_column_mapping_with_missing_columns():
     """Verifies that missing columns do not cause errors and provided columns map accurately."""
     # Row with only a subset of columns (missing Middle Name, Blood Group, Exit Date, etc.)
     partial_row = {
@@ -45,10 +37,10 @@ def test_column_mapping_with_missing_columns(db_session):
     assert mapped["department"] == "Analytics"
     assert mapped["location"] == "Bangalore"
     assert mapped["work_mode"] == "In-Person"
-    assert mapped["name_as_per_aadhar"] == "9999 8888 7777"
+    assert mapped["name_as_per_aadhar"] == "Alice Smith"
 
 
-def test_csv_excel_json_file_parsing(db_session):
+def test_csv_excel_json_file_parsing():
     """Verifies parsing of CSV, Excel, and JSON file formats."""
     test_record = {
         "Employee Number": "EMP7002",

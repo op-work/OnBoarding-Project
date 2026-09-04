@@ -1,10 +1,9 @@
 # Associate Onboarding Process
 
-A production-style enterprise HR internal web application built with Python 3.11+, Streamlit, SQLite, SQLAlchemy ORM, and Plotly.
+A production-style enterprise HR internal web application built with Python 3.11+, Streamlit, Azure PostgreSQL, SQLAlchemy ORM, and Plotly.
 
 ## Overview
-The **Associate Onboar
-ding Process** application enables HR and People Operations teams to manage the end-to-end onboarding lifecycle of new associates—from pre-onboarding checks to post-onboarding 90-day evaluations.
+The **Associate Onboarding Process** application enables HR and People Operations teams to manage the end-to-end onboarding lifecycle of new associates—from pre-onboarding checks to post-onboarding 90-day evaluations.
 
 ## Key Features
 - **Onboarding Selection Screen**: Choice between starting a **NEW JOINER** onboarding or managing **EXISTING ASSOCIATES**.
@@ -25,7 +24,7 @@ ding Process** application enables HR and People Operations teams to manage the 
 HR- On Boarding/
 ├── app.py                      # Main Streamlit application entrypoint & router
 ├── config.py                   # Application configuration & paths
-├── database.py                 # SQLite ORM initialization & seeding mechanism
+├── database.py                 # Azure PostgreSQL ORM initialization & seeding mechanism
 ├── models.py                   # SQLAlchemy database models
 ├── requirements.txt            # Python dependencies
 ├── README.md                   # Setup and usage guide

@@ -1,0 +1,19 @@
+{
+    "sqltools.connections": [
+        {
+            "pgOptions": {
+                "ssl": {
+                    "rejectUnauthorized": false
+                }
+            },
+            "ssh": "Disabled",
+            "server": "hr-automation.postgres.database.azure.com",
+            "port": 5432,
+            "askForPassword": true,
+            "driver": "PostgreSQL",
+            "name": "hr-automation",
+            "database": "hr_onboarding_dashboard",
+            "username": "HRdbadminkon007"
+        }
+    ]
+}

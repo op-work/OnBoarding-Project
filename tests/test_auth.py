@@ -9,12 +9,7 @@ from models import User
 from services.auth_service import AuthService
 
 
-@pytest.fixture(scope="module")
-def db_session():
-    init_db()
-    db = get_db()
-    yield db
-    db.close()
+
 
 
 def test_jwt_password_hashing(db_session):

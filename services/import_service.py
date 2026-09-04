@@ -152,14 +152,14 @@ class ImportService:
         display_name = get_val(["Display Name"])
         full_name_raw = get_val(["Full Name", "Name", "Associate Name"])
 
-        if full_name_raw:
+        if display_name and not display_name.replace(" ", "").replace("-", "").isdigit():
+            full_name = display_name
+        elif full_name_raw:
             full_name = full_name_raw
         elif first_name or last_name:
             full_name = " ".join(filter(None, [first_name, middle_name, last_name])).strip()
-        elif display_name:
-            full_name = display_name
         else:
-            full_name = f"Associate {emp_number}" if emp_number else "New Employee"
+            full_name = emp_number or "New Employee"
 
         work_email = get_val(["Work Email", "Official Email", "Email ID"])
         personal_email = get_val(["Personal Email", "Personal Email ID", "Email"])
@@ -179,7 +179,11 @@ class ImportService:
             work_mode = "In-Person"
 
         reporting_manager = get_val(["Reporting To", "Reporting Manager Employee Number", "Dotted Line Manager"]) or "HR Manager"
-        name_as_per_aadhar = get_val(["Aadhaar Number", "Aadhar Name", "Name as per Aadhar"]) or full_name
+        name_as_per_aadhar_raw = get_val(["Name as per Aadhar", "Aadhar Name", "Name on Aadhaar", "Name As Per Aadhaar"])
+        if name_as_per_aadhar_raw and not name_as_per_aadhar_raw.replace(" ", "").replace("-", "").isdigit():
+            name_as_per_aadhar = name_as_per_aadhar_raw
+        else:
+            name_as_per_aadhar = full_name
         
         exit_date_raw = get_val(["Exit Date", "Last Working Day", "LWD"])
         last_working_day = ImportService.parse_date(exit_date_raw)
@@ -194,6 +198,7 @@ class ImportService:
         shipment_address = ", ".join(filter(None, [c_addr1, c_addr2, c_city, c_state, c_zip]))
 
         mapped_record = {
+            "display_name": display_name or full_name,
             "full_name": full_name,
             "employee_id": emp_number,
             "email": primary_email,
@@ -285,8 +290,13 @@ class ImportService:
 
             if existing:
                 # Update existing associate fields
+                if rec.get("display_name"):
+                    existing.display_name = rec["display_name"]
                 if rec.get("full_name"):
-                    names = rec["full_name"].split(" ")
+                    full = rec["full_name"].strip()
+                    if full.lower().startswith("associate ") and len(full.split()) > 1:
+                        full = " ".join(full.split()[1:])
+                    names = full.split(" ")
                     existing.first_name = names[0]
                     existing.last_name = " ".join(names[1:]) if len(names) > 1 else ""
                 if rec.get("designation"):
@@ -313,10 +323,18 @@ class ImportService:
                 processed_associates.append(existing)
             else:
                 # Create new associate
+                full = (rec.get("full_name") or "").strip()
+                if full.lower().startswith("associate ") and len(full.split()) > 1:
+                    full = " ".join(full.split()[1:])
+                names = full.split(" ") if full else [""]
+                first_n = names[0]
+                last_n = " ".join(names[1:]) if len(names) > 1 else ""
+
                 assoc_data = {
+                    "display_name": rec.get("display_name") or full,
                     "name_as_per_aadhar": rec["name_as_per_aadhar"],
-                    "first_name": rec["full_name"].split(" ")[0],
-                    "last_name": " ".join(rec["full_name"].split(" ")[1:]) if " " in rec["full_name"] else "",
+                    "first_name": first_n,
+                    "last_name": last_n,
                     "personal_email": rec["personal_email"],
                     "date_of_joining": rec["date_of_joining"],
                     "is_fresher": rec["is_fresher"],

@@ -113,10 +113,15 @@ def render_new_onboarding_page(db: Session):
             st.session_state["page"] = "onboarding_selection"
             st.rerun()
 
+        names = name_as_per_aadhar.strip().split(" ") if name_as_per_aadhar else [""]
+        first_n = names[0]
+        last_n = " ".join(names[1:]) if len(names) > 1 else ""
+
         curr_data = {
+            "display_name": name_as_per_aadhar.strip(),
             "name_as_per_aadhar": name_as_per_aadhar,
-            "first_name": name_as_per_aadhar,
-            "last_name": "",
+            "first_name": first_n,
+            "last_name": last_n,
             "personal_email": personal_email,
             "date_of_joining": doj,
             "is_fresher": is_fresher,

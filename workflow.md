@@ -14,7 +14,7 @@ The **Associate Onboarding Process** is a modular enterprise Python Streamlit we
 [ Service Layer: Associate, Task, Progress, Document, Activity, Report Services ]
                    │
                    ▼
-[ Database Layer: SQLAlchemy ORM Models & SQLite (data/onboarding.db) ]
+[ Database Layer: SQLAlchemy ORM Models & Azure PostgreSQL ]
                    │
                    ▼
 [ File System Storage: Uploaded Documents (uploads/{associate_id}/) ]

@@ -1,19 +1,12 @@
 """
 Database Initialization and Connection Engine
-Manages SQLite database creation, session management, and realistic demo data seeding for Onboarding Operations.
+Manages PostgreSQL database creation, session management, and realistic demo data seeding for Onboarding Operations.
 """
 
 import datetime
-try:
-    import sqlite3
-    import _sqlite3
-except (ImportError, ModuleNotFoundError):
-    import sys, pysqlite3
-    sys.modules["sqlite3"] = pysqlite3
-
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
-from config import DB_PATH, DATA_DIR
+from config import DB_URI
 from models import Base, Associate, OnboardingRecord, ActivityLog, User
 from services.auth_service import AuthService
 from utils.logger import app_logger
@@ -28,12 +21,11 @@ from utils.constants import (
     STAGE_POST_ONBOARDING,
 )
 
-# Ensure database directory exists
-DATA_DIR.mkdir(parents=True, exist_ok=True)
+engine = create_engine(DB_URI, pool_pre_ping=True, pool_size=10, max_overflow=20)
 
-db_uri = f"sqlite:///{DB_PATH.as_posix()}"
-engine = create_engine(db_uri, connect_args={"check_same_thread": False})
 SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+
+
 
 def get_db():
     """Returns a database session instance."""
@@ -43,6 +35,7 @@ def init_db():
     """Initializes tables and seeds initial demo data if database is empty or schema changed."""
     try:
         with engine.connect() as conn:
+            conn.execute(text("SELECT display_name FROM associates LIMIT 1"))
             conn.execute(text("SELECT name_as_per_aadhar FROM associates LIMIT 1"))
             conn.execute(text("SELECT post_id_card_status FROM onboarding_records LIMIT 1"))
             conn.execute(text("SELECT post_probation_completed FROM onboarding_records LIMIT 1"))
@@ -62,6 +55,30 @@ def init_db():
         if associate_count == 0:
             app_logger.info("DATABASE: Seeding initial demo data.")
             seed_demo_data(db)
+        else:
+            # Sanitize legacy database records and populate display_name
+            for assoc in db.query(Associate).all():
+                changed = False
+                if assoc.name_as_per_aadhar and assoc.name_as_per_aadhar.replace(" ", "").replace("-", "").isdigit():
+                    assoc.name_as_per_aadhar = f"{assoc.first_name} {assoc.last_name}".strip() if (assoc.first_name and not assoc.first_name.isdigit()) else "Associate"
+                    changed = True
+                if assoc.first_name and assoc.first_name.replace(" ", "").replace("-", "").isdigit():
+                    assoc.first_name = "Associate"
+                    changed = True
+                if assoc.first_name and assoc.first_name.lower() == "associate" and assoc.last_name:
+                    assoc.first_name = assoc.last_name
+                    assoc.last_name = ""
+                    changed = True
+                if not assoc.display_name:
+                    if assoc.first_name and assoc.first_name.lower() != "associate":
+                        assoc.display_name = f"{assoc.first_name} {assoc.last_name}".strip() if assoc.last_name else assoc.first_name
+                    elif assoc.name_as_per_aadhar and not assoc.name_as_per_aadhar.replace(" ", "").replace("-", "").isdigit():
+                        assoc.display_name = assoc.name_as_per_aadhar
+                    else:
+                        assoc.display_name = assoc.last_name or assoc.employee_id or "Associate"
+                    changed = True
+                if changed:
+                    db.commit()
     finally:
         db.close()
 
@@ -187,6 +204,7 @@ def seed_demo_data(db):
 
     demo_associates = [
         {
+            "display_name": "Rahul Sharma",
             "first_name": "Rahul",
             "last_name": "Sharma",
             "personal_email": "rahul.sharma@example.com",
@@ -225,6 +243,7 @@ def seed_demo_data(db):
             }
         },
         {
+            "display_name": "Priya Patel",
             "first_name": "Priya",
             "last_name": "Patel",
             "personal_email": "priya.patel@example.com",
@@ -263,6 +282,7 @@ def seed_demo_data(db):
             }
         },
         {
+            "display_name": "Amit Verma",
             "first_name": "Amit",
             "last_name": "Verma",
             "personal_email": "amit.verma@example.com",
@@ -301,6 +321,7 @@ def seed_demo_data(db):
             }
         },
         {
+            "display_name": "Sneha Joshi",
             "first_name": "Sneha",
             "last_name": "Joshi",
             "personal_email": "sneha.joshi@example.com",
@@ -339,6 +360,7 @@ def seed_demo_data(db):
             }
         },
         {
+            "display_name": "Arjun Mehta",
             "first_name": "Arjun",
             "last_name": "Mehta",
             "personal_email": "arjun.mehta@example.com",

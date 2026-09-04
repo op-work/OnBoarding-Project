@@ -3,19 +3,24 @@ import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models import Base, Associate, OnboardingRecord, ActivityLog
-from database import seed_demo_data, recalculate_associate_progress
+from database import engine, seed_demo_data, recalculate_associate_progress
 from services.associate_service import AssociateService
 
 class TestDatabase(unittest.TestCase):
     def setUp(self):
-        # In-memory SQLite DB for isolated unit testing
-        self.engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
-        Base.metadata.create_all(bind=self.engine)
-        Session = sessionmaker(bind=self.engine)
+        try:
+            with engine.connect() as conn:
+                pass
+        except Exception as e:
+            self.skipTest(f"Azure PostgreSQL database is not reachable ({e}). Configure valid DB credentials in .env.")
+        Base.metadata.create_all(bind=engine)
+        Session = sessionmaker(bind=engine)
         self.db = Session()
 
     def tearDown(self):
-        self.db.close()
+        if hasattr(self, "db"):
+            self.db.rollback()
+            self.db.close()
 
     def test_seed_demo_data(self):
         """Tests that demo data seeds 5 associates and onboarding records with valid states."""

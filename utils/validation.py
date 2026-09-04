@@ -22,6 +22,8 @@ def validate_associate_form(data: dict) -> Tuple[bool, Dict[str, str]]:
     name = (data.get("name_as_per_aadhar") or data.get("first_name") or "").strip()
     if not name:
         errors["name_as_per_aadhar"] = "Name as per Aadhar is required."
+    elif name.replace(" ", "").replace("-", "").isdigit():
+        errors["name_as_per_aadhar"] = "Please enter candidate's actual full name (text) instead of an Aadhaar card/ID number."
 
     # 2. Confirmed Date of Joining
     doj = data.get("date_of_joining")

@@ -27,6 +27,7 @@ class Associate(Base):
     __tablename__ = "associates"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    display_name = Column(String(150), nullable=True)
     name_as_per_aadhar = Column(String(150), nullable=True)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=True, default="")
@@ -67,11 +68,32 @@ class Associate(Base):
     @property
     def full_name(self) -> str:
         """Returns the full display name of the associate."""
-        if self.name_as_per_aadhar:
-            return self.name_as_per_aadhar
+        # 1. Prioritize display_name if set and valid non-numeric
+        if self.display_name and not self.display_name.replace(" ", "").replace("-", "").isdigit():
+            clean_display = self.display_name.strip()
+            if clean_display.lower().startswith("associate ") and len(clean_display.split()) > 1:
+                return " ".join(clean_display.split()[1:])
+            return clean_display
+
+        # 2. Prioritize first_name and last_name if first_name is a valid non-numeric string
+        if self.first_name and not self.first_name.replace(" ", "").replace("-", "").isdigit():
+            if self.first_name.strip().lower() == "associate" and self.last_name:
+                return self.last_name.strip()
+            if self.last_name:
+                return f"{self.first_name} {self.last_name}".strip()
+            if self.first_name.strip().lower() != "associate":
+                return self.first_name.strip()
+
+        # 3. Use name_as_per_aadhar if it exists and is not purely numeric
+        if self.name_as_per_aadhar and not self.name_as_per_aadhar.replace(" ", "").replace("-", "").isdigit():
+            return self.name_as_per_aadhar.strip()
+            
+        # 4. Fallbacks
         if self.last_name:
-            return f"{self.first_name} {self.last_name}".strip()
-        return self.first_name or ""
+            return self.last_name.strip()
+        if self.first_name and self.first_name.strip().lower() != "associate":
+            return self.first_name.strip()
+        return self.employee_id or "Associate"
 
 
 class OnboardingRecord(Base):
