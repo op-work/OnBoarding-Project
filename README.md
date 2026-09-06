@@ -1,105 +1,192 @@
-# Associate Onboarding Process
+# Onboarding Operations System
 
-A production-style enterprise HR internal web application built with Python 3.11+, Streamlit, Azure PostgreSQL, SQLAlchemy ORM, and Plotly.
+A production-ready enterprise HR web application built with **Python 3.11+**, **Streamlit**, **Azure Database for PostgreSQL Flexible Server**, **SQLAlchemy 2.0 ORM**, and **Plotly**. Designed for deployment on **Azure Web App (Linux App Service)**.
 
-## Overview
-The **Associate Onboarding Process** application enables HR and People Operations teams to manage the end-to-end onboarding lifecycle of new associates—from pre-onboarding checks to post-onboarding 90-day evaluations.
+---
 
-## Key Features
-- **Onboarding Selection Screen**: Choice between starting a **NEW JOINER** onboarding or managing **EXISTING ASSOCIATES**.
-- **Multi-Step Form with Validation**: Collect associate details with real-time email, phone, and date validation.
-- **Conditional Work Mode Engine**: Automatically shows or hides asset shipping address and online-only tasks for Online vs Offline joiners.
-- **3 Primary Onboarding Stages**:
-  1. **Pre-Onboarding**: TA info, joiner connection, IT/Admin tickets, stakeholder notifications, schedule preparation.
-  2. **Onboarding Day**: Mandatory BGV/bank/ISMS forms, NDA/appointment letters, HR induction walk-through, Viva Engage joiner announcement.
-  3. **Post-Onboarding Activities**: ID card creation, HRMS document verification, 1-week, 30-day, 60-day, and 90-day feedback tracking with dynamic due dates.
-- **Dynamic Progress Engine**: Computes stage and overall progress percentage strictly from applicable database task records.
-- **Document Storage & Approval**: Secure upload handling (`uploads/{associate_id}/`) with status management (`Received`, `Approved`, `Rejected`).
-- **Task Inventory**: Searchable and filterable task list by associate, stage, priority, and due date.
-- **Enterprise Reports & Dashboards**: Visual analytics powered by Plotly for department distribution, stage completion, and overdue alerts.
-- **Audit Activity Log**: Tracks all associate actions, document uploads, and task completions with timestamps.
+## 📌 Executive Summary
 
-## Project Structure
+The **Onboarding Operations System** streamlines candidate onboarding for HR and People Operations teams—guiding new joiners from pre-onboarding checks, Day 1 orientation, and post-onboarding 90-day evaluations to final probation confirmation.
+
+---
+
+## 🛠 Key Features
+
+1. **Enterprise Authentication Guard**:
+   - Secure login portal using JWT (JSON Web Token) credential validation.
+   - Session state routing protection and default HR Admin seeding (`admin@company.com`).
+
+2. **Dual Registration Channels**:
+   - **Single Joiner Registration**: 7-field validated form capturing Aadhar name, DOJ, personal email, fresher status/LWD, designation, location, work mode, and shipping address.
+   - **Bulk Employee Import**: Multi-format ingestion (`.xlsx`, `.xls`, `.csv`, `.json`) mapping up to 71 HR system columns with automatic duplicate checking and `UPSERT` profile updates.
+
+3. **Dynamic 14-Milestone Progress Engine**:
+   - Computes progress percentage dynamically from 14 verified database checklist items across 3 primary stages:
+     - **Pre-Onboarding** (6 items): TA info, joiner connection, IT tickets, stakeholder notification, schedule prep & delivery.
+     - **Onboarding Day** (4 items): Mandatory BGV/bank/ISMS forms, NDA/docs verification, HR induction, Viva Engage announcement.
+     - **Post-Onboarding** (4 items): ID card request, HRMS document verification (`Approved` status), 1-week check-in, insurance/PF registration.
+
+4. **Feedback & 90-Day Probation Tracker**:
+   - Tracks 30-day, 60-day, and 90-day manager/associate feedback checkpoints.
+   - Transitions associate probation status from `Under Review` to `Confirmed`.
+
+5. **Analytics & Audit Logging**:
+   - Real-time Plotly charts for department distribution, stage progress, work mode metrics, and overdue tasks.
+   - Database-backed `ActivityLog` tracking system events, document uploads, and milestone updates with exact timestamps.
+
+---
+
+## 📂 Project Architecture & Workflow Documentation
+
+Detailed technical architecture and operational workflow block diagrams are documented in the [`project_info/`](./project_info/) directory:
+
+- 📐 [**Project Architecture Diagram (`project_info/architecture.md`)**](./project_info/architecture.md): Block diagram detailing Azure Web App container, Streamlit presentation layer, JWT security, business services, SQLAlchemy ORM, and Azure PostgreSQL Flexible Server with SSL.
+- 🔄 [**End-to-End Workflow Diagram (`project_info/workflow.md`)**](./project_info/workflow.md): Complete block diagram tracing candidate journey from user authentication, candidate entry (single/bulk import), 3-stage milestone execution, probation sign-off, to analytics reporting.
+
+---
+
+## 📁 Repository Structure
+
 ```
 HR- On Boarding/
 ├── app.py                      # Main Streamlit application entrypoint & router
-├── config.py                   # Application configuration & paths
-├── database.py                 # Azure PostgreSQL ORM initialization & seeding mechanism
-├── models.py                   # SQLAlchemy database models
-├── requirements.txt            # Python dependencies
-├── README.md                   # Setup and usage guide
-├── workflow.md                 # Technical workflow specification
-├── decesion.md                 # Architectural decision log
+├── config.py                   # Environment & Azure PostgreSQL configuration
+├── database.py                 # Azure PostgreSQL session management & demo data seeder
+├── models.py                   # SQLAlchemy ORM database models
+├── requirements.txt            # Python production dependencies
+├── .env.example                # Environment variable configuration template
+├── README.md                   # Production setup & deployment documentation
+├── project_info/               # Project architecture & workflow documentation
+│   ├── architecture.md         # Architecture block diagram & technical specs
+│   └── workflow.md             # End-to-end user workflow block diagrams
 ├── components/                 # Reusable Streamlit UI components
-│   ├── sidebar.py
-│   ├── header.py
-│   ├── cards.py
-│   ├── status_badge.py
-│   ├── progress.py
-│   ├── checklist.py
-│   ├── employee_profile.py
-│   ├── tables.py
-│   └── forms.py
-├── pages/                      # Page view implementations
-│   ├── onboarding_selection.py
-│   ├── new_onboarding.py
-│   ├── onboarding_dashboard.py
-│   ├── pre_onboarding.py
-│   ├── onboarding_day.py
-│   ├── post_onboarding.py
-│   ├── existing_associates.py
-│   ├── associate_details.py
-│   ├── documents.py
-│   ├── tasks.py
-│   ├── dashboard.py
-│   ├── reports.py
-│   └── settings.py
-├── services/                   # Business logic & repository services
-│   ├── associate_service.py
-│   ├── onboarding_service.py
-│   ├── task_service.py
-│   ├── progress_service.py
-│   ├── document_service.py
-│   ├── report_service.py
-│   └── activity_service.py
-├── utils/                      # Helper utilities
-│   ├── constants.py
-│   ├── validation.py
-│   ├── formatting.py
-│   └── file_utils.py
-├── data/                       # SQLite database directory (onboarding.db)
-├── uploads/                    # Associate uploaded document storage
-└── tests/                      # Unit test suite
+│   ├── sidebar.py              # Navigation sidebar with authenticated state
+│   ├── header.py               # Page header component
+│   ├── cards.py                # Metric & summary cards
+│   ├── status_badge.py         # Custom HTML pill status badges
+│   ├── progress.py             # Progress bars & stage metrics
+│   ├── checklist.py            # Milestone interactive checklists
+│   └── employee_profile.py     # Associate details view layout
+├── views/                      # Application page views
+│   ├── auth.py                 # Login portal view
+│   ├── onboarding_selection.py # Onboarding Hub selection screen
+│   ├── new_onboarding.py       # Single joiner registration form
+│   ├── onboarding_dashboard.py # Active onboarding operational board
+│   ├── pre_onboarding.py       # Stage 1 checklist & IT dispatch
+│   ├── onboarding_day.py       # Stage 2 Day 1 orientation checklist
+│   ├── post_onboarding.py      # Stage 3 post-onboarding activities
+│   ├── feedback_probation.py   # Stage 4 30/60/90-day probation review
+│   ├── existing_associates.py  # Full directory with search & filters
+│   ├── associate_details.py    # Detailed profile & document manager
+│   ├── dashboard.py            # Plotly analytics dashboard
+│   └── reports.py              # Executive reports & export tools
+├── services/                   # Business logic repositories
+│   ├── associate_service.py    # CRUD & associate filtering engine
+│   ├── auth_service.py         # JWT authentication & password hashing
+│   ├── import_service.py       # 71-column multi-format file parser & UPSERT
+│   ├── progress_service.py     # Dynamic milestone calculator
+│   ├── report_service.py       # Analytical metrics aggregator
+│   └── activity_service.py     # Centralized audit logger
+├── utils/                      # Utilities & helpers
+│   ├── constants.py            # App-wide stage & status constants
+│   ├── validation.py           # Email, phone, & name validation rules
+│   ├── formatting.py           # Date, currency, & display text formatters
+│   ├── html_utils.py           # Custom HTML rendering helpers
+│   ├── logo_utils.py           # Application logo loader
+│   └── logger.py               # Rotating physical app.log file logger
+├── assets/                     # UI styling & image assets
+│   └── styles.css              # Custom CSS theme stylesheet
+├── uploads/                    # Physical document attachment storage
+└── tests/                      # Pytest unit & integration test suite
 ```
 
-## Installation & Setup
+---
 
-1. **Clone/Navigate to directory**:
-   ```bash
-   cd "HR- On Boarding"
-   ```
+## 🚀 Local Development Setup
 
-2. **Create & activate Virtual Environment**:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
+### 1. Prerequisites
+- Python 3.11 or higher installed.
+- PostgreSQL database instance (local or Azure PostgreSQL Flexible Server).
 
-3. **Install Dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### 2. Installation
+```bash
+# Clone or navigate to project directory
+cd "HR- On Boarding"
 
-## Running the Application
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install production dependencies
+pip install -r requirements.txt
+```
+
+### 3. Environment Configuration
+Copy `.env.example` to `.env` and fill in your Azure PostgreSQL connection details:
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+```env
+DB_HOST=your-server-name.postgres.database.azure.com
+DB_PORT=5432
+DB_NAME=employee360
+DB_USER=app_user
+DB_PASSWORD=your_secure_db_password
+DB_SSL_MODE=require
+JWT_SECRET=your_super_secret_jwt_key_2026
+```
+
+### 4. Running the Application
 ```bash
 streamlit run app.py
 ```
 
-## Demo Data
-Upon first startup, the database is automatically seeded with 5 realistic associate records across Engineering, HR, Data, AI, and Finance departments, featuring both Online and Offline work modes and varying completion stages.
+Default Login Credentials (automatically seeded):
+- **Email**: `admin@company.com`
+- **Password**: `admin123`
 
-## Running Tests
+---
+
+## ☁️ Azure Web App Production Deployment Guide
+
+### Step 1: Provision Azure Resources
+1. **Azure Database for PostgreSQL Flexible Server**:
+   - Create a Flexible Server instance on Azure Portal.
+   - Create database `employee360`.
+   - In Firewall settings, check **"Allow public access from any Azure service within Azure"**.
+
+2. **Azure App Service (Linux Web App)**:
+   - Create a Linux Web App with **Python 3.11** runtime stack.
+
+### Step 2: Configure App Service Environment Variables
+In Azure Portal, navigate to **App Service -> Configuration -> Application settings**, and add:
+- `DB_HOST`: `your-server.postgres.database.azure.com`
+- `DB_PORT`: `5432`
+- `DB_NAME`: `employee360`
+- `DB_USER`: `app_user`
+- `DB_PASSWORD`: `your_secure_db_password`
+- `DB_SSL_MODE`: `require`
+- `JWT_SECRET`: `your_super_secret_jwt_key_2026`
+- `SCM_DO_BUILD_DURING_DEPLOYMENT`: `true`
+
+### Step 3: Configure Startup Command
+In Azure Portal, navigate to **App Service -> Configuration -> General settings -> Startup Command**, set:
 ```bash
-python -m unittest discover -s tests
+python -m streamlit run app.py --server.port 8000 --server.address 0.0.0.0
 ```
-# OnBoarding-Project
+
+### Step 4: Deploy via Git or Azure CLI
+```bash
+# Using Azure CLI to deploy zip package
+az webapp deploy --resource-group rg-hr-onboarding --name app-hr-onboarding --src-path project.zip --type zip
+```
+
+---
+
+## 🧪 Running Unit Tests
+
+```bash
+pytest
+```

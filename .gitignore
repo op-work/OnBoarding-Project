@@ -54,13 +54,6 @@ venv.bak/
 !.env.example
 .streamlit/secrets.toml
 
-# Databases & Data Store
-*.db
-*.sqlite
-*.sqlite3
-data/*.db
-data/*.sqlite
-
 # Uploads & User Generated Files
 uploads/*
 !uploads/.gitkeep
@@ -72,6 +65,7 @@ uploads/*
 *.swp
 *.swo
 *~
+app.log
 
 # IDE & Editor settings
 .vscode/*

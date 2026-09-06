@@ -6,7 +6,7 @@ Manages PostgreSQL database creation, session management, and realistic demo dat
 import datetime
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
-from config import DB_URI
+from config import DB_URI, IS_DB_CONFIGURED
 from models import Base, Associate, OnboardingRecord, ActivityLog, User
 from services.auth_service import AuthService
 from utils.logger import app_logger
@@ -26,13 +26,16 @@ engine = create_engine(DB_URI, pool_pre_ping=True, pool_size=10, max_overflow=20
 SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
 
 
-
 def get_db():
     """Returns a database session instance."""
     return SessionLocal()
 
-def init_db():
-    """Initializes tables and seeds initial demo data if database is empty or schema changed."""
+def init_db() -> bool:
+    """Initializes tables and seeds initial demo data if database is empty or schema changed. Returns True on success, False on connection failure."""
+    if not IS_DB_CONFIGURED:
+        app_logger.warning("DATABASE: Unconfigured database parameters in .env file.")
+        return False
+
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT display_name FROM associates LIMIT 1"))
@@ -41,46 +44,50 @@ def init_db():
             conn.execute(text("SELECT post_probation_completed FROM onboarding_records LIMIT 1"))
             conn.execute(text("SELECT password_token FROM users LIMIT 1"))
     except Exception as e:
-        app_logger.info(f"DATABASE: Schema change or missing columns detected ({e}). Recreating tables cleanly.")
-        Base.metadata.drop_all(bind=engine)
+        app_logger.info(f"DATABASE: Schema check/migration attempt ({e}). Attempting table creation.")
 
-    Base.metadata.create_all(bind=engine)
-    app_logger.info("DATABASE: Tables initialized successfully.")
-    db = get_db()
     try:
-        # Seed default admin user if empty
-        AuthService.seed_default_user(db)
-        
-        associate_count = db.query(Associate).count()
-        if associate_count == 0:
-            app_logger.info("DATABASE: Seeding initial demo data.")
-            seed_demo_data(db)
-        else:
-            # Sanitize legacy database records and populate display_name
-            for assoc in db.query(Associate).all():
-                changed = False
-                if assoc.name_as_per_aadhar and assoc.name_as_per_aadhar.replace(" ", "").replace("-", "").isdigit():
-                    assoc.name_as_per_aadhar = f"{assoc.first_name} {assoc.last_name}".strip() if (assoc.first_name and not assoc.first_name.isdigit()) else "Associate"
-                    changed = True
-                if assoc.first_name and assoc.first_name.replace(" ", "").replace("-", "").isdigit():
-                    assoc.first_name = "Associate"
-                    changed = True
-                if assoc.first_name and assoc.first_name.lower() == "associate" and assoc.last_name:
-                    assoc.first_name = assoc.last_name
-                    assoc.last_name = ""
-                    changed = True
-                if not assoc.display_name:
-                    if assoc.first_name and assoc.first_name.lower() != "associate":
-                        assoc.display_name = f"{assoc.first_name} {assoc.last_name}".strip() if assoc.last_name else assoc.first_name
-                    elif assoc.name_as_per_aadhar and not assoc.name_as_per_aadhar.replace(" ", "").replace("-", "").isdigit():
-                        assoc.display_name = assoc.name_as_per_aadhar
-                    else:
-                        assoc.display_name = assoc.last_name or assoc.employee_id or "Associate"
-                    changed = True
-                if changed:
-                    db.commit()
-    finally:
-        db.close()
+        Base.metadata.create_all(bind=engine)
+        app_logger.info("DATABASE: Tables initialized successfully.")
+        db = get_db()
+        try:
+            # Seed default admin user if empty
+            AuthService.seed_default_user(db)
+            
+            associate_count = db.query(Associate).count()
+            if associate_count == 0:
+                app_logger.info("DATABASE: Seeding initial demo data.")
+                seed_demo_data(db)
+            else:
+                # Sanitize legacy database records and populate display_name
+                for assoc in db.query(Associate).all():
+                    changed = False
+                    if assoc.name_as_per_aadhar and assoc.name_as_per_aadhar.replace(" ", "").replace("-", "").isdigit():
+                        assoc.name_as_per_aadhar = f"{assoc.first_name} {assoc.last_name}".strip() if (assoc.first_name and not assoc.first_name.isdigit()) else "Associate"
+                        changed = True
+                    if assoc.first_name and assoc.first_name.replace(" ", "").replace("-", "").isdigit():
+                        assoc.first_name = "Associate"
+                        changed = True
+                    if assoc.first_name and assoc.first_name.lower() == "associate" and assoc.last_name:
+                        assoc.first_name = assoc.last_name
+                        assoc.last_name = ""
+                        changed = True
+                    if not assoc.display_name:
+                        if assoc.first_name and assoc.first_name.lower() != "associate":
+                            assoc.display_name = f"{assoc.first_name} {assoc.last_name}".strip() if assoc.last_name else assoc.first_name
+                        elif assoc.name_as_per_aadhar and not assoc.name_as_per_aadhar.replace(" ", "").replace("-", "").isdigit():
+                            assoc.display_name = assoc.name_as_per_aadhar
+                        else:
+                            assoc.display_name = assoc.last_name or assoc.employee_id or "Associate"
+                        changed = True
+                    if changed:
+                        db.commit()
+        finally:
+            db.close()
+        return True
+    except Exception as err:
+        app_logger.error(f"DATABASE: Failed to initialize PostgreSQL database: {err}")
+        return False
 
 
 def recalculate_associate_progress(db, associate_id: int):

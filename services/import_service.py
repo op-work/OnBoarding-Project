@@ -274,7 +274,7 @@ class ImportService:
 
     @staticmethod
     def ingest_records(db: Session, records: list[dict]) -> list[Associate]:
-        """Bulk ingests or updates (UPSERT) validated records into the SQLite database."""
+        """Bulk ingests or updates (UPSERT) validated records into the PostgreSQL database."""
         processed_associates = []
 
         for rec in records:

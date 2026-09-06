@@ -28,6 +28,12 @@ DB_USER = os.getenv("DB_USER", "app_user")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "your_db_password")
 DB_SSL_MODE = os.getenv("DB_SSL_MODE", "require")
 
+IS_DB_CONFIGURED = (
+    bool(DB_HOST)
+    and DB_HOST not in ["yourserver.postgres.database.azure.com", "YOUR_AZURE_POSTGRES_SERVER", "localhost_placeholder"]
+    and DB_PASSWORD != "your_db_password"
+)
+
 DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("AZURE_POSTGRESQL_CONNECTIONSTRING")
 
 if DATABASE_URL:
@@ -36,9 +42,11 @@ if DATABASE_URL:
     elif DATABASE_URL.startswith("postgresql://"):
         DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
     DB_URI = DATABASE_URL
+    if "connect_timeout" not in DB_URI:
+        DB_URI += ("&" if "?" in DB_URI else "?") + "connect_timeout=3"
 else:
     encoded_password = quote_plus(DB_PASSWORD)
-    DB_URI = f"postgresql+psycopg2://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}?sslmode={DB_SSL_MODE}"
+    DB_URI = f"postgresql+psycopg2://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}?sslmode={DB_SSL_MODE}&connect_timeout=3"
 
 
 # Security & Authentication Configuration

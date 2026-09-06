@@ -1,6 +1,6 @@
 """
 Onboarding Operations Application Router & Entry Point
-Initializes page configuration, applies custom styles, creates SQLite database session, and handles dynamic view routing.
+Initializes page configuration, applies custom styles, creates Azure PostgreSQL database session, and handles dynamic view routing.
 """
 
 import os
@@ -23,8 +23,39 @@ if css_file.exists():
     with open(css_file, "r") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# Initialize SQLite database and seed initial associates if empty
-init_db()
+# Initialize Azure PostgreSQL database and seed initial associates if empty
+db_connected = False
+try:
+    db_connected = init_db()
+except Exception as e:
+    app_logger.error(f"DATABASE CONNECTION ERROR: {e}")
+
+if not db_connected:
+    from config import DB_HOST, IS_DB_CONFIGURED
+    st.markdown("---")
+    if not IS_DB_CONFIGURED:
+        st.error("⚠️ **Database Configuration Required**")
+        st.info("The application is set to connect to Azure PostgreSQL, but `.env` currently contains default placeholder values.")
+    else:
+        st.error("⚠️ **Database Connection Timeout / Failed**")
+        st.info(f"Attempted connection to host: `{DB_HOST}`. The database server timed out or refused connection.")
+
+    st.markdown("""
+    ### 🛠️ Quick Setup Instructions
+    To connect the app to your PostgreSQL database, please configure the `.env` file in the project root directory:
+
+    ```env
+    DB_HOST=your-postgres-server.postgres.database.azure.com
+    DB_PORT=5432
+    DB_NAME=employee360
+    DB_USER=app_user
+    DB_PASSWORD=your_actual_password
+    DB_SSL_MODE=require
+    ```
+
+    *After updating `.env`, refresh this page or restart Streamlit.*
+    """)
+    st.stop()
 
 # DB session for current request
 db = get_db()
