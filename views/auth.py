@@ -80,7 +80,7 @@ def render_auth_page(db):
             auth_tab1, auth_tab2 = st.tabs(["Sign In", "Register Account"])
 
             with auth_tab1:
-                login_email = st.text_input("Corporate Email", placeholder="e.g. admin@company.com", key="auth_login_email")
+                login_email = st.text_input("Corporate Email", placeholder="e.g. name@company.com", key="auth_login_email")
                 login_password = st.text_input("Password", type="password", placeholder="••••••••", key="auth_login_password")
 
                 if st.button("Sign In to Portal", type="primary", use_container_width=True, key="btn_login_submit"):
@@ -100,16 +100,6 @@ def render_auth_page(db):
                             st.rerun()
                         else:
                             st.error(msg)
-
-                st.markdown("""
-                <div style="margin-top: 16px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #475569; box-sizing: border-box; overflow: hidden;">
-                    <div style="font-weight: 700; color: #1E293B; margin-bottom: 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">System Demo Credentials</div>
-                    <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
-                        <div>• Email: <code style="background: #E2E8F0; padding: 2px 6px; border-radius: 4px; color: #0F172A;">admin@company.com</code></div>
-                        <div>• Password: <code style="background: #E2E8F0; padding: 2px 6px; border-radius: 4px; color: #0F172A;">admin123</code></div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
 
 
             with auth_tab2:

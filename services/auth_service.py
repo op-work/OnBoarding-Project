@@ -119,16 +119,20 @@ class AuthService:
     @classmethod
     def seed_default_user(cls, db: Session):
         """
-        Seeds default HR Admin account if user table is empty.
-        Default credentials: admin@company.com / admin123
+        Seeds initial administrator account if configured via environment variables and user table is empty.
+        In production, users register securely via the portal or configure ADMIN_EMAIL and ADMIN_PASSWORD in .env.
         """
-        user_count = db.query(User).count()
-        if user_count == 0:
-            app_logger.info("AUTH: Seeding default HR Admin user (admin@company.com)")
-            cls.register_user(
-                db=db,
-                full_name="HR Administrator",
-                email="admin@company.com",
-                password="admin123",
-                role="HR Admin"
-            )
+        import os
+        admin_email = os.getenv("ADMIN_EMAIL")
+        admin_password = os.getenv("ADMIN_PASSWORD")
+        if admin_email and admin_password:
+            user_count = db.query(User).count()
+            if user_count == 0:
+                app_logger.info(f"AUTH: Seeding initial configured administrator ({admin_email})")
+                cls.register_user(
+                    db=db,
+                    full_name=os.getenv("ADMIN_NAME", "System Administrator"),
+                    email=admin_email,
+                    password=admin_password,
+                    role="HR Admin"
+                )

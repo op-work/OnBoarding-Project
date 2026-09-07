@@ -38,8 +38,8 @@ def render_stage_card(title: str, description: str, completed: int, total: int, 
             <div>{status_badge}</div>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #475569; margin-bottom: 0px;">
-            <span>Milestone Status: <strong>{completed} / {total} Verified</strong></span>
-            <span style="font-weight: 700; color: #2563EB;">{pct}%</span>
+            <span style="font-weight: 700; color: #2563EB; font-size: 15px;">{pct}% Complete</span>
+            <span>Milestone: <strong>{completed} / {total} Verified</strong></span>
         </div>
     </div>
     """

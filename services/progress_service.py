@@ -114,7 +114,9 @@ class ProgressService:
                 "progress_pct": 0.0,
                 "overall_status": STATUS_NOT_STARTED,
                 "current_stage": STAGE_PRE_ONBOARDING,
-                "stages": {}
+                "stages": {},
+                "completed_count": 0,
+                "total_count": 14
             }
 
         stage_metrics = {
@@ -124,10 +126,24 @@ class ProgressService:
             STAGE_FEEDBACK_PROBATION: ProgressService.get_stage_progress(db, associate_id, STAGE_FEEDBACK_PROBATION),
         }
 
+        completed_count = (
+            stage_metrics[STAGE_PRE_ONBOARDING].get("completed", 0) +
+            stage_metrics[STAGE_ONBOARDING_DAY].get("completed", 0) +
+            stage_metrics[STAGE_POST_ONBOARDING].get("completed", 0)
+        )
+        total_count = (
+            stage_metrics[STAGE_PRE_ONBOARDING].get("total", 6) +
+            stage_metrics[STAGE_ONBOARDING_DAY].get("total", 4) +
+            stage_metrics[STAGE_POST_ONBOARDING].get("total", 4)
+        )
+
         return {
             "associate_id": associate_id,
             "progress_pct": record.overall_progress,
             "overall_status": record.overall_status,
             "current_stage": record.current_stage,
-            "stages": stage_metrics
+            "stages": stage_metrics,
+            "completed_count": completed_count,
+            "total_count": total_count
         }
+

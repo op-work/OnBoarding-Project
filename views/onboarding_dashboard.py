@@ -7,7 +7,7 @@ import streamlit as st
 from sqlalchemy.orm import Session
 from components.header import render_header
 from components.employee_profile import render_employee_summary_card
-from components.progress import render_stage_stepper
+from components.progress import render_stage_stepper, render_overall_progress_banner
 from components.cards import render_stage_card
 from services.associate_service import AssociateService
 from services.progress_service import ProgressService
@@ -52,6 +52,13 @@ def render_onboarding_dashboard_page(db: Session):
             </p>
         </div>
         """), unsafe_allow_html=True)
+
+    # Overall Onboarding Progress with Percentage on the Left
+    render_overall_progress_banner(
+        overall.get("completed_count", 0),
+        overall.get("total_count", 14),
+        overall.get("progress_pct", 0.0)
+    )
 
     # Visual Onboarding Stepper
     render_stage_stepper(assoc.onboarding_record.current_stage, overall["stages"])

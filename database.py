@@ -11,8 +11,6 @@ from models import Base, Associate, OnboardingRecord, ActivityLog, User
 from services.auth_service import AuthService
 from utils.logger import app_logger
 from utils.constants import (
-    WORK_MODE_ONLINE,
-    WORK_MODE_OFFLINE,
     STATUS_NOT_STARTED,
     STATUS_IN_PROGRESS,
     STATUS_COMPLETED,
@@ -54,12 +52,23 @@ def init_db() -> bool:
             # Seed default admin user if empty
             AuthService.seed_default_user(db)
             
-            associate_count = db.query(Associate).count()
-            if associate_count == 0:
-                app_logger.info("DATABASE: Seeding initial demo data.")
-                seed_demo_data(db)
-            else:
-                # Sanitize legacy database records and populate display_name
+            # Purge any legacy hardcoded demo records from previous test seeds if present
+            demo_emp_ids = ["EMP-2026-001", "EMP-2026-002", "EMP-2026-003", "EMP-2026-004", "EMP-2026-005"]
+            demo_associates = db.query(Associate).filter(Associate.employee_id.in_(demo_emp_ids)).all()
+            if demo_associates:
+                for d_assoc in demo_associates:
+                    db.delete(d_assoc)
+                db.commit()
+                app_logger.info("DATABASE: Purged legacy demo associates for production readiness.")
+
+            # Purge legacy hardcoded demo admin if present
+            demo_user = db.query(User).filter(User.email == "admin@company.com").first()
+            if demo_user:
+                db.delete(demo_user)
+                db.commit()
+                app_logger.info("DATABASE: Purged legacy demo admin user.")
+
+            # Sanitize existing database records and ensure valid display_name
                 for assoc in db.query(Associate).all():
                     changed = False
                     if assoc.name_as_per_aadhar and assoc.name_as_per_aadhar.replace(" ", "").replace("-", "").isdigit():
@@ -205,231 +214,4 @@ def recalculate_associate_progress(db, associate_id: int):
     app_logger.info(f"PROGRESS: Recalculated for {assoc.full_name} ({assoc.employee_id}) -> Progress: {progress}%, Overall Status: {new_status}, Stage: {record.current_stage}")
     return progress, new_status
 
-def seed_demo_data(db):
-    """Seeds realistic associate profiles with varied departments, work modes, and milestone states."""
-    today = datetime.date.today()
-
-    demo_associates = [
-        {
-            "display_name": "Rahul Sharma",
-            "first_name": "Rahul",
-            "last_name": "Sharma",
-            "personal_email": "rahul.sharma@example.com",
-            "phone": "+91 9876543210",
-            "designation": "Software Engineer",
-            "department": "Engineering",
-            "grade": "L2 - Senior Associate",
-            "date_of_joining": today - datetime.timedelta(days=40),
-            "location": "Pune",
-            "reporting_manager": "Vikram Malhotra",
-            "employee_id": "EMP-2026-001",
-            "work_email": "rahul.sharma@company.com",
-            "work_mode": WORK_MODE_ONLINE,
-            "asset_shipment_address": "Flat 402, Baner, Pune 411045",
-            "record": {
-                "pre_info_received": True,
-                "pre_connect_joiner": True,
-                "pre_it_tickets_status": "Raised",
-                "pre_notify_stakeholders": True,
-                "pre_prepare_schedule": True,
-                "pre_share_schedule": True,
-                "day1_mandatory_forms": True,
-                "day1_employment_docs": True,
-                "day1_hr_induction": True,
-                "day1_announce_joiner": True,
-                "post_id_card_status": "Raised",
-                "post_hrms_doc_status": "Approved",
-                "post_feedback_1week": True,
-                "post_insurance_pf": True,
-                "post_feedback_30days": True,
-                "post_feedback_60days": True,
-                "post_feedback_90days": True,
-                "it_equipment_status": "Delivered",
-                "bgv_status": "Verified",
-                "probation_status": "Confirmed",
-            }
-        },
-        {
-            "display_name": "Priya Patel",
-            "first_name": "Priya",
-            "last_name": "Patel",
-            "personal_email": "priya.patel@example.com",
-            "phone": "+91 9876543211",
-            "designation": "HR Associate",
-            "department": "Human Resources",
-            "grade": "L1 - Associate",
-            "date_of_joining": today - datetime.timedelta(days=15),
-            "location": "Bengaluru",
-            "reporting_manager": "Ananya Desai",
-            "employee_id": "EMP-2026-002",
-            "work_email": "priya.patel@company.com",
-            "work_mode": WORK_MODE_OFFLINE,
-            "asset_shipment_address": None,
-            "record": {
-                "pre_info_received": True,
-                "pre_connect_joiner": True,
-                "pre_it_tickets_status": "Raised",
-                "pre_notify_stakeholders": True,
-                "pre_prepare_schedule": True,
-                "pre_share_schedule": True,
-                "day1_mandatory_forms": True,
-                "day1_employment_docs": True,
-                "day1_hr_induction": True,
-                "day1_announce_joiner": True,
-                "post_id_card_status": "Raised",
-                "post_hrms_doc_status": "Approved",
-                "post_feedback_1week": False,
-                "post_insurance_pf": False,
-                "post_feedback_30days": False,
-                "post_feedback_60days": False,
-                "post_feedback_90days": False,
-                "it_equipment_status": "Delivered",
-                "bgv_status": "Verified",
-                "probation_status": "Under Review",
-            }
-        },
-        {
-            "display_name": "Amit Verma",
-            "first_name": "Amit",
-            "last_name": "Verma",
-            "personal_email": "amit.verma@example.com",
-            "phone": "+91 9876543212",
-            "designation": "Data Analyst",
-            "department": "Data",
-            "grade": "L1 - Associate",
-            "date_of_joining": today - datetime.timedelta(days=5),
-            "location": "Hyderabad",
-            "reporting_manager": "Suresh Nair",
-            "employee_id": "EMP-2026-003",
-            "work_email": "amit.verma@company.com",
-            "work_mode": WORK_MODE_ONLINE,
-            "asset_shipment_address": "Plot 12, Jubilee Hills, Hyderabad 500033",
-            "record": {
-                "pre_info_received": True,
-                "pre_connect_joiner": True,
-                "pre_it_tickets_status": "Raised",
-                "pre_notify_stakeholders": True,
-                "pre_prepare_schedule": True,
-                "pre_share_schedule": True,
-                "day1_mandatory_forms": True,
-                "day1_employment_docs": True,
-                "day1_hr_induction": False,
-                "day1_announce_joiner": False,
-                "post_id_card_status": "Not Raised",
-                "post_hrms_doc_status": "Pending Approval",
-                "post_feedback_1week": False,
-                "post_insurance_pf": False,
-                "post_feedback_30days": False,
-                "post_feedback_60days": False,
-                "post_feedback_90days": False,
-                "it_equipment_status": "Dispatched",
-                "bgv_status": "Verified",
-                "probation_status": "Under Review",
-            }
-        },
-        {
-            "display_name": "Sneha Joshi",
-            "first_name": "Sneha",
-            "last_name": "Joshi",
-            "personal_email": "sneha.joshi@example.com",
-            "phone": "+91 9876543213",
-            "designation": "AI Engineer",
-            "department": "AI",
-            "grade": "L2 - Senior Associate",
-            "date_of_joining": today + datetime.timedelta(days=3),
-            "location": "Mumbai",
-            "reporting_manager": "Dr. Rajesh Kulkarni",
-            "employee_id": "EMP-2026-004",
-            "work_email": "sneha.joshi@company.com",
-            "work_mode": WORK_MODE_ONLINE,
-            "asset_shipment_address": "Powai, Mumbai 400076",
-            "record": {
-                "pre_info_received": True,
-                "pre_connect_joiner": True,
-                "pre_it_tickets_status": "Raised",
-                "pre_notify_stakeholders": False,
-                "pre_prepare_schedule": False,
-                "pre_share_schedule": False,
-                "day1_mandatory_forms": False,
-                "day1_employment_docs": False,
-                "day1_hr_induction": False,
-                "day1_announce_joiner": False,
-                "post_id_card_status": "Not Raised",
-                "post_hrms_doc_status": "Pending Approval",
-                "post_feedback_1week": False,
-                "post_insurance_pf": False,
-                "post_feedback_30days": False,
-                "post_feedback_60days": False,
-                "post_feedback_90days": False,
-                "it_equipment_status": "Dispatched",
-                "bgv_status": "Verified",
-                "probation_status": "Under Review",
-            }
-        },
-        {
-            "display_name": "Arjun Mehta",
-            "first_name": "Arjun",
-            "last_name": "Mehta",
-            "personal_email": "arjun.mehta@example.com",
-            "phone": "+91 9876543214",
-            "designation": "Finance Associate",
-            "department": "Finance",
-            "grade": "L1 - Associate",
-            "date_of_joining": today + datetime.timedelta(days=10),
-            "location": "Delhi NCR",
-            "reporting_manager": "Kavita Rao",
-            "employee_id": "EMP-2026-005",
-            "work_email": "arjun.mehta@company.com",
-            "work_mode": WORK_MODE_OFFLINE,
-            "asset_shipment_address": None,
-            "record": {
-                "pre_info_received": False,
-                "pre_connect_joiner": False,
-                "pre_it_tickets_status": "Not Raised",
-                "pre_notify_stakeholders": False,
-                "pre_prepare_schedule": False,
-                "pre_share_schedule": False,
-                "day1_mandatory_forms": False,
-                "day1_employment_docs": False,
-                "day1_hr_induction": False,
-                "day1_announce_joiner": False,
-                "post_id_card_status": "Not Raised",
-                "post_hrms_doc_status": "Pending Approval",
-                "post_feedback_1week": False,
-                "post_insurance_pf": False,
-                "post_feedback_30days": False,
-                "post_feedback_60days": False,
-                "post_feedback_90days": False,
-                "it_equipment_status": "Pending Dispatch",
-                "bgv_status": "In Progress",
-                "probation_status": "Under Review",
-            }
-        },
-    ]
-
-    for item in demo_associates:
-        rec_data = item.pop("record")
-        assoc = Associate(**item, status=STATUS_NOT_STARTED)
-        db.add(assoc)
-        db.commit()
-        db.refresh(assoc)
-
-        rec = OnboardingRecord(
-            associate_id=assoc.id,
-            started_at=datetime.datetime.utcnow(),
-            **rec_data
-        )
-        db.add(rec)
-        db.commit()
-
-        log = ActivityLog(
-            associate_id=assoc.id,
-            action="Associate Onboarding Initiated",
-            description=f"Initiated onboarding record for {assoc.full_name} ({assoc.designation}). Work mode: {assoc.work_mode}.",
-            performed_by="System Seed Engine",
-        )
-        db.add(log)
-        db.commit()
-
-        recalculate_associate_progress(db, assoc.id)
 

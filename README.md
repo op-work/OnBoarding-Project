@@ -143,9 +143,8 @@ JWT_SECRET=your_super_secret_jwt_key_2026
 streamlit run app.py
 ```
 
-Default Login Credentials (automatically seeded):
-- **Email**: `admin@company.com`
-- **Password**: `admin123`
+Login & Access:
+- Register an initial administrator account via the **Register Account** tab on the login screen, or configure `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`.
 
 ---
 

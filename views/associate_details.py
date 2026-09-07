@@ -39,11 +39,11 @@ def render_associate_details_page(db: Session):
     # Overall Progress Metrics
     overall = ProgressService.get_overall_progress(db, assoc.id)
     st.markdown("### Overall Milestone Progress")
-    c_p1, c_p2 = st.columns([4, 1])
+    c_p1, c_p2 = st.columns([1.2, 4.8])
     with c_p1:
-        st.progress(overall["progress_pct"] / 100.0)
+        st.markdown(f"<div style='font-size: 16px; font-weight: 700; color: #1E40AF; padding-top: 2px;'>{overall['progress_pct']}% Complete</div>", unsafe_allow_html=True)
     with c_p2:
-        st.markdown(f"**{overall['progress_pct']}% Complete**")
+        st.progress(overall["progress_pct"] / 100.0)
 
     st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
     st.markdown("### Stage Breakdown & Verification")

@@ -153,13 +153,23 @@ class AssociateService:
             query = query.filter(Associate.department == department)
 
         if location and location != "All":
-            query = query.filter(Associate.location == location)
+            if location == "Other":
+                query = query.filter(~Associate.location.in_(["Nagpur", "Pune"]))
+            elif location in ["Nagpur", "Pune"]:
+                query = query.filter(Associate.location == location)
+            else:
+                query = query.filter(Associate.location.ilike(f"%{location.strip()}%"))
 
         if status and status != "All":
             query = query.filter(Associate.status == status)
 
         if work_mode and work_mode != "All":
-            query = query.filter(Associate.work_mode == work_mode)
+            if work_mode == "Virtual":
+                query = query.filter(Associate.work_mode.in_(["Virtual", "Online"]))
+            elif work_mode == "In-person":
+                query = query.filter(Associate.work_mode.in_(["In-person", "Offline"]))
+            else:
+                query = query.filter(Associate.work_mode == work_mode)
 
         return query.order_by(Associate.created_at.desc()).all()
 

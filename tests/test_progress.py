@@ -122,6 +122,8 @@ class TestProgress(unittest.TestCase):
         self.assertEqual(overall["stages"]["Onboarding Day"]["progress_pct"], 100.0)
         self.assertEqual(overall["stages"]["Post-Onboarding"]["progress_pct"], 100.0)
         self.assertEqual(overall["stages"]["Feedback & Probation"]["progress_pct"], 100.0)
+        self.assertEqual(overall["completed_count"], 14)
+        self.assertEqual(overall["total_count"], 14)
 
     def test_out_of_order_and_toggling_items(self):
         """Tests toggling items off and performing out-of-order stage updates."""

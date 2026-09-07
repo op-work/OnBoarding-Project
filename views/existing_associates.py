@@ -10,7 +10,8 @@ from components.status_badge import render_status_badge
 from services.associate_service import AssociateService
 from services.progress_service import ProgressService
 from services.import_service import ImportService
-from utils.constants import DEPARTMENTS, LOCATIONS, WORK_MODES
+from components.progress import render_inline_progress_bar_html
+from utils.constants import DEPARTMENTS
 from utils.formatting import format_date
 from utils.html_utils import clean_html
 
@@ -119,17 +120,22 @@ def render_existing_associates_page(db: Session):
     with c_d:
         dept_filter = st.selectbox("Department", options=["All"] + DEPARTMENTS)
     with c_l:
-        loc_filter = st.selectbox("Location", options=["All"] + LOCATIONS)
+        loc_option = st.selectbox("Location", options=["All", "Nagpur", "Pune", "Other"], key="filter_loc_select")
+        custom_other_loc = ""
+        if loc_option == "Other":
+            custom_other_loc = st.text_input("Type Location Name", key="filter_other_loc_input", placeholder="e.g. Mumbai")
     with c_st:
         status_filter = st.selectbox("Status", options=["All", "Not Started", "In Progress", "Completed", "Draft"])
     with c_wm:
-        mode_filter = st.selectbox("Work Mode", options=["All"] + WORK_MODES)
+        mode_filter = st.selectbox("Work Mode", options=["All", "Virtual", "In-person"])
+
+    final_loc_filter = custom_other_loc.strip() if (loc_option == "Other" and custom_other_loc.strip()) else loc_option
 
     associates = AssociateService.search_associates(
         db,
         search_query=search_query,
         department=dept_filter,
-        location=loc_filter,
+        location=final_loc_filter,
         status=status_filter,
         work_mode=mode_filter
     )
@@ -147,7 +153,7 @@ def render_existing_associates_page(db: Session):
 
         card_html = f"""
         <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
                 <div style="flex: 2;">
                     <h4 style="margin: 0 0 2px 0; color: #0F172A; font-size: 16px;">
                         {assoc.full_name} <span style="font-size: 13px; color: #64748B; font-weight: 400;">({assoc.employee_id})</span>
@@ -156,16 +162,15 @@ def render_existing_associates_page(db: Session):
                         {assoc.designation} &bull; {assoc.department} &bull; {assoc.location}
                     </div>
                 </div>
-                <div style="flex: 1.5; font-size: 13px; color: #475569;">
+                <div style="flex: 1.4; font-size: 13px; color: #475569;">
                     <div>DOJ: <strong>{format_date(assoc.date_of_joining)}</strong></div>
                     <div>Manager: <strong>{assoc.reporting_manager}</strong></div>
                     <div>Mode: <strong>{assoc.work_mode}</strong></div>
                 </div>
-                <div style="flex: 1.5; text-align: center;">
-                    <div style="font-size: 13px; font-weight: 700; color: #1E40AF; margin-bottom: 4px;">
-                        {overall['progress_pct']}% Progress
-                    </div>
-                    {badge_html}
+                <div style="flex: 1.8; text-align: left; padding-left: 10px; border-left: 1px solid #F1F5F9;">
+                    <div style="font-size: 11px; font-weight: 700; color: #64748B; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Onboard Completion</div>
+                    {render_inline_progress_bar_html(overall['progress_pct'], color='#10B981' if overall['progress_pct'] == 100.0 else '#2563EB', height=8)}
+                    <div style="margin-top: 6px; text-align: right;">{badge_html}</div>
                 </div>
             </div>
         </div>

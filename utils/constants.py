@@ -6,7 +6,7 @@ Defines stages, work modes, department lists, locations, and grades.
 # Work Modes
 WORK_MODE_ONLINE = "Virtual"
 WORK_MODE_OFFLINE = "In-person"
-WORK_MODES = ["Virtual", "In-person", "Online", "Offline"]
+WORK_MODES = ["Virtual", "In-person"]
 JOB_LOCATIONS = ["Nagpur", "Pune"]
 MODES_OF_JOINING = ["In-person", "Virtual"]
 

@@ -144,7 +144,7 @@ graph TD
 
 ### 2. Security & Authentication Layer
 - **Authentication**: JWT (JSON Web Token) encoding for password credential validation (`PyJWT`).
-- **User Roles**: Pre-seeded Super Admin (`admin@company.com`) and HR Manager roles.
+- **User Roles**: HR Admin and HR Manager roles with secure token authentication.
 - **Guard Mechanism**: Streamlit session state check (`st.session_state['authenticated']`) halts non-authenticated request execution at `app.py`.
 
 ### 3. Business Service Layer

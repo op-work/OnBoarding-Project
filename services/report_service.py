@@ -52,6 +52,49 @@ class ReportService:
 
     @staticmethod
     def get_stage_breakdown(db: Session) -> Dict[str, int]:
-        """Returns associate count by current stage."""
-        results = db.query(OnboardingRecord.current_stage, func.count(OnboardingRecord.id)).group_by(OnboardingRecord.current_stage).all()
-        return {stage: count for stage, count in results if stage}
+        """Returns associate count by current stage for exclusive dashboard pipeline visualization."""
+        stages = {
+            "Pre-Onboarding": 0,
+            "Onboarding Day": 0,
+            "Post-Onboarding": 0,
+            "Feedback & Probation": 0,
+        }
+        records = db.query(OnboardingRecord).all()
+        for r in records:
+            stg = r.current_stage or "Pre-Onboarding"
+            if r.overall_status == STATUS_COMPLETED or (r.overall_progress and r.overall_progress >= 100.0):
+                stages["Feedback & Probation"] += 1
+            elif stg in stages:
+                stages[stg] += 1
+            else:
+                stages["Pre-Onboarding"] += 1
+        return stages
+
+    @staticmethod
+    def get_department_status_breakdown(db: Session):
+        """
+        Returns structured matrix with Department, Status ('Completed', 'In Progress', 'Not Started'), and Count
+        for stacked bar chart visualization.
+        """
+        associates = db.query(Associate).all()
+        dept_status_map = {}
+        for a in associates:
+            dept = a.department or "General"
+            rec = a.onboarding_record
+            status = rec.overall_status if rec else STATUS_NOT_STARTED
+            if status not in [STATUS_COMPLETED, STATUS_IN_PROGRESS, STATUS_NOT_STARTED]:
+                status = STATUS_NOT_STARTED if status == "Draft" else STATUS_IN_PROGRESS
+
+            if dept not in dept_status_map:
+                dept_status_map[dept] = {
+                    STATUS_COMPLETED: 0,
+                    STATUS_IN_PROGRESS: 0,
+                    STATUS_NOT_STARTED: 0
+                }
+            dept_status_map[dept][status] += 1
+
+        rows = []
+        for dept, statuses in sorted(dept_status_map.items()):
+            for st_name, count in statuses.items():
+                rows.append({"Department": dept, "Status": st_name, "Count": count})
+        return rows

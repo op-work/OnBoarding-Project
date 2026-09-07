@@ -57,12 +57,12 @@ def render_pre_onboarding_page(db: Session):
     </div>
     """, unsafe_allow_html=True)
 
-    # Pre-Onboarding Stage Progress Bar
-    p_col1, p_col2 = st.columns([4, 1])
+    # Pre-Onboarding Stage Progress Bar (Percentage on the Left)
+    p_col1, p_col2 = st.columns([1.2, 4.8])
     with p_col1:
-        st.progress(stage_progress['progress_pct'] / 100.0)
+        st.markdown(f"<div style='font-size: 16px; font-weight: 700; color: #1E40AF; padding-top: 2px;'>{stage_progress['progress_pct']}%</div><div style='font-size: 12px; color: #64748B;'>({stage_progress['completed']}/6 Verified)</div>", unsafe_allow_html=True)
     with p_col2:
-        st.markdown(f"**{stage_progress['progress_pct']}%** ({stage_progress['completed']}/6 Verified)")
+        st.progress(stage_progress['progress_pct'] / 100.0)
 
     st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
     st.markdown("### Pre-Onboarding Milestone Checklist")
@@ -216,6 +216,6 @@ def render_pre_onboarding_page(db: Session):
                 st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("Back to Associate Workspace", key="btn_back_onb_pre", type="primary"):
+    if st.button("Back to Associate Workspace", key="btn_back_onb_pre", type="primary", use_container_width=True):
         st.session_state["page"] = "onboarding_dashboard"
         st.rerun()
